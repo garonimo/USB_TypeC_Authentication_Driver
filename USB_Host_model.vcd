@@ -1,0 +1,206 @@
+$date
+	Fri Sep  8 20:52:53 2017
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module test $end
+$var wire 1 ! D1_m $end
+$var wire 1 " D1_p $end
+$var wire 1 # RX1_m $end
+$var wire 1 $ RX1_p $end
+$var wire 1 % RX2_m $end
+$var wire 1 & RX2_p $end
+$var wire 1 ' SBU1 $end
+$var wire 1 ( SBU2 $end
+$var wire 1 ) TX1_m $end
+$var wire 1 * TX1_p $end
+$var wire 1 + reset $end
+$var wire 1 , clk $end
+$var wire 1 - VBUS $end
+$var wire 1 . TX2_p $end
+$var wire 1 / TX2_m $end
+$var wire 1 0 CC2 $end
+$var wire 1 1 CC1 $end
+$scope module FSM_TEST $end
+$var wire 1 ! D1_m $end
+$var wire 1 " D1_p $end
+$var wire 1 # RX1_m $end
+$var wire 1 $ RX1_p $end
+$var wire 1 % RX2_m $end
+$var wire 1 & RX2_p $end
+$var wire 1 ' SBU1 $end
+$var wire 1 ( SBU2 $end
+$var wire 1 ) TX1_m $end
+$var wire 1 * TX1_p $end
+$var wire 1 / TX2_m $end
+$var wire 1 . TX2_p $end
+$var wire 1 + reset $end
+$var wire 1 , clk $end
+$var wire 1 - VBUS $end
+$var wire 1 0 CC2 $end
+$var wire 1 1 CC1 $end
+$var reg 1 2 TX2_m_Temp $end
+$var reg 1 3 TX2_p_Temp $end
+$var reg 3 4 next_state [2:0] $end
+$var reg 3 5 state [2:0] $end
+$scope begin FSM_COMB $end
+$upscope $end
+$scope begin FSM_OUTPUT $end
+$upscope $end
+$scope begin FSM_SEQ $end
+$upscope $end
+$upscope $end
+$scope module HOST $end
+$var wire 1 ! D1_m $end
+$var wire 1 " D1_p $end
+$var wire 1 # RX1_m $end
+$var wire 1 $ RX1_p $end
+$var wire 1 % RX2_m $end
+$var wire 1 & RX2_p $end
+$var wire 1 ' SBU1 $end
+$var wire 1 ( SBU2 $end
+$var wire 1 ) TX1_m $end
+$var wire 1 * TX1_p $end
+$var wire 1 / TX2_m $end
+$var wire 1 . TX2_p $end
+$var reg 1 1 CC1 $end
+$var reg 1 0 CC2 $end
+$var reg 1 - VBUS $end
+$var reg 1 , clk $end
+$var reg 1 + reset $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+bx 5
+b1 4
+x3
+x2
+01
+10
+x/
+x.
+x-
+0,
+1+
+z*
+z)
+z(
+z'
+z&
+z%
+z$
+z#
+z"
+z!
+$end
+#20000
+0+
+#100000
+b100 4
+0.
+03
+0/
+02
+b1 5
+1,
+#200000
+0,
+#300000
+b100 4
+b100 5
+1,
+#400000
+0,
+#500000
+1.
+13
+1,
+#600000
+0,
+#700000
+1,
+#800000
+0,
+#900000
+1,
+#950000
+b100 4
+11
+#1000000
+b1 4
+0,
+00
+#1100000
+b10 4
+b1 5
+1,
+#1200000
+0,
+#1300000
+b10 4
+0.
+03
+b10 5
+1,
+#1400000
+0,
+#1500000
+1/
+12
+1,
+#1600000
+0,
+#1700000
+1,
+#1800000
+0,
+#1900000
+1,
+#2000000
+0,
+#2100000
+1,
+#2200000
+0,
+#2300000
+1,
+#2400000
+0,
+#2500000
+1,
+#2600000
+0,
+#2700000
+1,
+#2800000
+0,
+#2900000
+1,
+#2950000
+b1 4
+01
+#3000000
+b1 4
+0,
+10
+#3100000
+b100 4
+b1 5
+1,
+#3200000
+0,
+#3300000
+b100 4
+0/
+02
+b100 5
+1,
+#3400000
+0,
+#3450000
