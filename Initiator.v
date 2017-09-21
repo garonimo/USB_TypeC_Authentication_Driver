@@ -13,27 +13,33 @@ module initiator
   (
     input wire clk,
     input wire reset,
-    input wire read_req_in,
+    input wire init_req_in,
     input wire [999:0] auth_msg_init_in,
-    output wire read_req_out,
+    output wire init_req_out,
     output wire [999:0] auth_msg_init_out
   );
 
-  //Variables del modulo
+  //constantes
+  parameter size_of_states_init = 7;
+  parameter GET_CERTIFICATE_timeout = 200, CHALLENGE_timeout = 1200, GET_DIGESTS_timeout = 200; //ms
+  //states
+  parameter IDLE = 7'b0000001, GEN_ERROR = 7'b0000100;
+  parameter WHICH_REQ = 7'b0001000, GET_CERTIFICATE = 7'b0010000;
+  parameter CHALLENGE = 7'b0100000, GET_DIGESTS = 7'b1000000;
+  //Variables del módulo
   integer init_timeout_counter = 0;
   integer current_timeout;
-  wire error;
-  reg [8:0] ProtocolVersion,MessageType,Param1,Param2;
-
+  wire Error_Busy,Error_Invalid_Response,Error_Unspecified;
+  reg [size_of_states_init-1:0] state, next_state;
 
   //-------------------------Inicio del código---------------------------------
 
   //Para el manejo de los timeout
   always @(posedge clk) begin
-    if (read_req_out | reset) begin
+    if (init_req_out | reset) begin
       init_timeout_counter = 0;
     end
-    else if (read_req_in) begin
+    else if (init_req_in) begin
       init_timeout_counter += 1;
     end
   end
