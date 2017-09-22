@@ -15,6 +15,7 @@
 #
 #TOOL INPUT
 SRC = USB_Host_model.v driver.v
+TEST_FILE = Responder.v
 TESTBENCH = tb.v
 TBOUTPUT = USB_Host_model.vcd #THIS NEEDS TO MATCH THE OUTPUT FILE
 			#FROM YOUR TESTBENCH
@@ -49,3 +50,8 @@ check : $(TESTBENCH) $(SRC)
 
 simulate: $(COUTPUT)
 	$(SIMULATOR) $(SFLAGS) $(COUTPUT) $(SOUTPUT)
+
+compile_test:
+	@iverilog -o prueba $(TEST_FILE)
+	@echo "Test file(s) compiled succesfully"
+	@rm prueba
