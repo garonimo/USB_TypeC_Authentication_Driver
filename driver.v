@@ -11,18 +11,7 @@
 
 module driver_authentication_test
   (
-    input wire TX1_p,
-    input wire TX1_m,
-    input wire VBUS,
     input wire CC1,
-    input wire D1_p,   /*no se si entrada o salida*/
-    input wire D1_m,   /*no se si entrada o salida*/
-    input wire SBU1,
-    input wire RX2_m,
-    input wire RX2_p,
-    input wire RX1_p,
-    input wire RX1_m,
-    input wire SBU2,
     input wire CC2,
     input wire clk,
     input wire reset,

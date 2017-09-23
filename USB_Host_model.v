@@ -14,18 +14,12 @@
 
 module USB_Host_model
   (
-    input wire TX1_p,
-    input wire TX1_m,
-    output reg VBUS,
+    input wire resp_req_out,
+    input wire [`MSG_LEN-1:0] auth_msg_resp_out,
+    output wire [`MSG_LEN-1:0] auth_msg_resp_in,
+    output Ack_out_resp,
+    output resp_req_in,
     output CC1,
-    output D1_p,   /*no se si entrada o salida*/
-    output D1_m,   /*no se si entrada o salida*/
-    output SBU1,
-    output RX2_m,
-    output RX2_p,
-    output RX1_p,
-    output RX1_m,
-    output SBU2,
     output CC2,
     input wire TX2_m,
     input wire TX2_p,
@@ -36,23 +30,35 @@ module USB_Host_model
   reg clk = 0;
   always #10 clk = !clk;         //100 MHz
 
+  reg resp_req_in = 1;
+  always @(posedge clk) begin
+    if (resp_req_out) begin
+      resp_req_in = 0;
+    end
+  end //Always
+
+  reg Ack_out_resp = 1;
+
+  reg [`MSG_LEN-1:0] auth_msg_resp_in_temp = {8'b00000001,8'b10000001,2063'b100000001000001};
+  assign auth_msg_resp_in = auth_msg_resp_in_temp;
+
   reg reset = 1;
   initial begin
-    # 2 reset = 0;
+    # 40 reset = 0;
   end
 
   reg CC1 = 0;
   initial begin
     # 95  CC1 = 1;
     # 200  CC1 = 0;
-    # 50 $finish;
+    # 200 $finish;
   end
 
   reg CC2 = 1;
   initial begin
     # 100  CC2 = 0;
     # 200  CC2 = 1;
-    # 50 $finish;
+    # 200 $finish;
   end
 
 

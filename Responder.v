@@ -8,32 +8,33 @@
 *	Descripción: Este archivo es el authentication responder
 */
 
+`include "Parameters.v"
 
 module responder
   (
     input wire clk,
     input wire reset,
     input wire resp_req_in,
-    input wire [999:0] auth_msg_resp_in,
+    input wire [`MSG_LEN-1:0] auth_msg_resp_in,
+    input wire Ack_in,
     output wire resp_req_out,
-    output wire [999:0] auth_msg_resp_out
+    output wire [`MSG_LEN-1:0] auth_msg_resp_out
   );
 
-  //constantes
-  parameter size_of_states_init = 7, size_of_header_vars = 8;
-  parameter size_of_header_in_bytes = 4;
-  parameter CERTIFICATE_timeout = 135, CHALLENGE_AUTH_timeout = 635; //ms
-  parameter GET_DIGESTS_timeout = 135;                               //ms
   //states
-  parameter IDLE = 7'b0000001, GET_DATA = 7'b0000010, GEN_ERROR = 7'b0000100;
-  parameter WHICH_REQ = 7'b0001000, GET_CERTIFICATE = 7'b0010000;
-  parameter CHALLENGE = 7'b0100000, GET_DIGESTS = 7'b1000000;
+  parameter IDLE = 8'b00000001, GET_DATA = 8'b00000010, GEN_ERROR = 8'b00000100;
+  parameter WHICH_REQ = 8'b00001000, GET_CERTIFICATE = 8'b00010000;
+  parameter CHALLENGE = 8'b00100000, GET_DIGESTS = 8'b01000000;
+  parameter SEND_MSG = 8'b10000000;
   //variables
   integer current_timeout;
   reg Error_Busy,Error_Unsupported_Protocol,Error_Invalid_Request,Error_Unspecified = 0;
-  reg [size_of_header_vars-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
-  wire [(size_of_header_vars-1)*size_of_header_in_bytes:0] header = {ProtocolVersion_in,MessageType_in,Param1_in,Param2_in};
-  reg [size_of_states_init-1:0] state, next_state;
+  reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
+  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header = {ProtocolVersion_in,MessageType_in,Param1_in,Param2_in};
+  wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
+  reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
+  reg [`MSG_LEN-1:0] auth_msg_resp_out_temp;
+  reg resp_req_out_temp;
 
   integer resp_timeout_counter = 0;
 
@@ -56,7 +57,7 @@ module responder
    next_state = 7'b0;
    case (state)
      IDLE: begin
-           if (reset == 1'b1) begin
+           if (resp_req_in == 1'b1) begin
              next_state = GET_DATA;
            end
            else begin
@@ -66,15 +67,15 @@ module responder
 
      GET_DATA:
      begin
-          ProtocolVersion_in = auth_msg_resp_in[size_of_header_vars-1:0];
+          ProtocolVersion_in = auth_msg_resp_in[`MSG_LEN-1:`MSG_LEN-1-(`SIZE_OF_HEADER_VARS)];
           if (ProtocolVersion_in != 1) begin
               Error_Unsupported_Protocol <= 1'b1;
           end else begin
               Error_Unsupported_Protocol <= 1'b0;
           end
-          MessageType_in = auth_msg_resp_in[(2*size_of_header_vars)-1:size_of_header_vars];
-          Param1_in = auth_msg_resp_in[(3*size_of_header_vars)-1:(2*size_of_header_vars)];
-          Param2_in = auth_msg_resp_in[(4*size_of_header_vars)-1:(3*size_of_header_vars)];
+          MessageType_in = auth_msg_resp_in[`MSG_LEN-1-(`SIZE_OF_HEADER_VARS)-1:`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS)];
+          Param1_in = auth_msg_resp_in[`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS)-1:`MSG_LEN-1-(3*`SIZE_OF_HEADER_VARS)];
+          Param2_in = auth_msg_resp_in[`MSG_LEN-1-(3*`SIZE_OF_HEADER_VARS)-1:`MSG_LEN-1-(4*`SIZE_OF_HEADER_VARS)];
           next_state = WHICH_REQ;
      end // GET_DATA
 
@@ -90,25 +91,29 @@ module responder
      end // WHICH_REQ
 
      GET_DIGESTS: begin
-        next_state = IDLE;
+        next_state = SEND_MSG;
      end
 
      GET_CERTIFICATE: begin
-        next_state = IDLE;
+        next_state = SEND_MSG;
      end
 
      CHALLENGE: begin
-        next_state = IDLE;
+        next_state = SEND_MSG;
      end
 
      GEN_ERROR: begin
+        next_state = SEND_MSG;
+     end
+
+     SEND_MSG: begin
         next_state = IDLE;
      end
 
      default: next_state = IDLE;
     endcase
 
-  end //Always
+  end //Always-RESPONDER_COMB
 
 //-------------------------Lógica secuencial------------------------------------
 
@@ -122,6 +127,39 @@ module responder
    else begin
      state <= next_state;
    end
- end // Always
+ end // Always-Resp_SEQ
+
+ //---------------------------Lógica de salida----------------------------------
+   always @ (posedge clk) begin : Resp_OUTPUT
+     if (reset == 1'b1) begin
+       resp_req_out_temp <= 1'b0;
+       auth_msg_resp_out_temp <= 0;
+     end
+     else begin
+       case (state)
+
+         IDLE: begin
+           resp_req_out_temp <= 1'b0;
+           auth_msg_resp_out_temp <= 0;
+         end
+
+         SEND_MSG: begin
+           auth_msg_resp_out_temp <= {header,payload};
+           resp_req_out_temp <= 1'b1;
+         end
+
+         default: begin
+           resp_req_out_temp <= 1'b0;
+           auth_msg_resp_out_temp <= 0;
+         end
+
+       endcase
+     end
+   end //Always-Resp_OUTPUT
+
+//-------------------------------End of always code-----------------------------
+
+ assign auth_msg_resp_out = auth_msg_resp_out_temp;
+ assign resp_req_out = resp_req_out_temp;
 
 endmodule // responder

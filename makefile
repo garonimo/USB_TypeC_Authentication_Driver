@@ -14,7 +14,7 @@
 # CHANGE THESE THREE LINES FOR YOUR DESIGN
 #
 #TOOL INPUT
-SRC = USB_Host_model.v driver.v
+SRC = USB_Host_model.v driver.v Responder.v
 TEST_FILE = Responder.v
 TESTBENCH = tb.v
 TBOUTPUT = USB_Host_model.vcd #THIS NEEDS TO MATCH THE OUTPUT FILE
