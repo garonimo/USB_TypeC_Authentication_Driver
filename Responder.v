@@ -30,11 +30,12 @@ module responder
   integer current_timeout;
   reg Error_Busy,Error_Unsupported_Protocol,Error_Invalid_Request,Error_Unspecified = 0;
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
-  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header = {ProtocolVersion_in,MessageType_in,Param1_in,Param2_in};
+  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
   reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
   reg [`MSG_LEN-1:0] auth_msg_resp_out_temp;
-  reg resp_req_out_temp;
+  reg resp_req_out_temp, Ack_in_get_digests;
+  wire Ack_out_get_digests;
 
   integer resp_timeout_counter = 0;
 
@@ -50,6 +51,15 @@ module responder
       resp_timeout_counter += 1;
     end
   end
+
+  get_digests_answer answer_to_digests
+    (
+      .clk(clk),
+      .Ack_in(Ack_in_get_digests),
+      .header(header),
+      .Ack_out(Ack_out_get_digests),
+      .payload(payload)
+    );
 
  //----------------------Lógica combinacional ---------------------------------
  always @ (*)
@@ -90,9 +100,14 @@ module responder
         endcase
      end // WHICH_REQ
 
-     GET_DIGESTS: begin
-        next_state = SEND_MSG;
-     end
+     GET_DIGESTS:
+     begin
+        if (Ack_out_get_digests) begin
+          next_state = SEND_MSG;
+        end else begin
+          next_state = GET_DIGESTS;
+        end
+     end //GET_DIGESTS
 
      GET_CERTIFICATE: begin
         next_state = SEND_MSG;
@@ -106,8 +121,14 @@ module responder
         next_state = SEND_MSG;
      end
 
-     SEND_MSG: begin
-        next_state = IDLE;
+     SEND_MSG:
+     begin
+       if (Ack_in) begin
+          next_state = IDLE;
+       end
+       else begin
+          next_state = SEND_MSG;
+       end
      end
 
      default: next_state = IDLE;
@@ -143,7 +164,13 @@ module responder
            auth_msg_resp_out_temp <= 0;
          end
 
-         SEND_MSG: begin
+         GET_DIGESTS: begin
+            Ack_in_get_digests <= 1'b1;
+         end
+
+         SEND_MSG:
+         begin
+           Ack_in_get_digests <= 1'b0;
            auth_msg_resp_out_temp <= {header,payload};
            resp_req_out_temp <= 1'b1;
          end
@@ -161,5 +188,6 @@ module responder
 
  assign auth_msg_resp_out = auth_msg_resp_out_temp;
  assign resp_req_out = resp_req_out_temp;
+
 
 endmodule // responder
