@@ -28,14 +28,17 @@ module responder
   parameter SEND_MSG = 8'b10000000;
   //variables
   integer current_timeout;
-  reg Error_Busy,Error_Unsupported_Protocol,Error_Invalid_Request,Error_Unspecified = 0;
+  reg Error_Busy_temp,Error_Unsupported_Protocol_temp,Error_Invalid_Request_temp = 0;
+  wire Error_Invalid_Request,Error_Unspecified,Error_Busy,Error_Unsupported_Protocol;
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
+  wire [`SIZE_OF_HEADER_VARS-1:0] Param1;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
   reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
   reg [`MSG_LEN-1:0] auth_msg_resp_out_temp;
   reg resp_req_out_temp, Ack_in_get_digests;
-  wire Ack_out_get_digests;
+  wire Ack_out_get_digests,challenge_enable,challenge_answer_Ack_in;
+  reg challenge_enable_temp;
 
   integer resp_timeout_counter = 0;
 
@@ -61,6 +64,18 @@ module responder
       .payload(payload)
     );
 
+  challenge_answer answer_to_challenge
+    (
+      .clk(clk),
+      .Enable(challenge_enable),
+      .auth_msg_resp_in(auth_msg_resp_in),
+      .Param1(Param1),
+      .Error_Invalid_Request(Error_Invalid_Request),
+      .header(header),
+      .Ack_out(challenge_answer_Ack_in),
+      .payload(payload)
+    );
+
  //----------------------Lógica combinacional ---------------------------------
  always @ (*)
   begin : RESPONDER_COMB
@@ -79,9 +94,9 @@ module responder
      begin
           ProtocolVersion_in = auth_msg_resp_in[`MSG_LEN-1:`MSG_LEN-1-(`SIZE_OF_HEADER_VARS)];
           if (ProtocolVersion_in != 1) begin
-              Error_Unsupported_Protocol <= 1'b1;
+              Error_Unsupported_Protocol_temp <= 1'b1;
           end else begin
-              Error_Unsupported_Protocol <= 1'b0;
+              Error_Unsupported_Protocol_temp <= 1'b0;
           end
           MessageType_in = auth_msg_resp_in[`MSG_LEN-1-(`SIZE_OF_HEADER_VARS)-1:`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS)];
           Param1_in = auth_msg_resp_in[`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS)-1:`MSG_LEN-1-(3*`SIZE_OF_HEADER_VARS)];
@@ -96,13 +111,13 @@ module responder
           130: next_state = GET_CERTIFICATE;
           131: next_state = CHALLENGE;
 
-          default: Error_Invalid_Request = 1'b1;
+          default: Error_Invalid_Request_temp = 1'b1;
         endcase
      end // WHICH_REQ
 
      GET_DIGESTS:
      begin
-        if (Ack_out_get_digests) begin
+        if (Ack_out_get_digests == 1'b1) begin
           next_state = SEND_MSG;
         end else begin
           next_state = GET_DIGESTS;
@@ -113,11 +128,17 @@ module responder
         next_state = SEND_MSG;
      end
 
-     CHALLENGE: begin
-        next_state = SEND_MSG;
-     end
+     CHALLENGE:
+     begin
+        if (challenge_answer_Ack_in == 1'b1) begin
+          next_state = SEND_MSG;
+        end else begin
+          next_state = CHALLENGE;
+        end
+     end //CHALLENGE
 
-     GEN_ERROR: begin
+     GEN_ERROR:
+     begin
         next_state = SEND_MSG;
      end
 
@@ -142,7 +163,7 @@ module responder
    if (reset == 1'b1) begin
      state <= IDLE;
    end
-   else if (Error_Busy | Error_Unsupported_Protocol | Error_Invalid_Request | Error_Unspecified) begin
+   else if (Error_Busy_temp | Error_Unsupported_Protocol_temp | Error_Invalid_Request | Error_Unspecified) begin
      state <= GEN_ERROR;
    end
    else begin
@@ -151,7 +172,7 @@ module responder
  end // Always-Resp_SEQ
 
  //---------------------------Lógica de salida----------------------------------
-   always @ (posedge clk) begin : Resp_OUTPUT
+   always @ (negedge clk) begin : Resp_OUTPUT
      if (reset == 1'b1) begin
        resp_req_out_temp <= 1'b0;
        auth_msg_resp_out_temp <= 0;
@@ -168,8 +189,14 @@ module responder
             Ack_in_get_digests <= 1'b1;
          end
 
+         CHALLENGE:
+         begin
+            challenge_enable_temp = 1'b1;
+         end
+
          SEND_MSG:
          begin
+           challenge_enable_temp = 1'b0;
            Ack_in_get_digests <= 1'b0;
            auth_msg_resp_out_temp <= {header,payload};
            resp_req_out_temp <= 1'b1;
@@ -188,6 +215,11 @@ module responder
 
  assign auth_msg_resp_out = auth_msg_resp_out_temp;
  assign resp_req_out = resp_req_out_temp;
+ assign Error_Busy = Error_Busy_temp;
+ assign Error_Unsupported_Protocol = Error_Unsupported_Protocol_temp;
+ assign Error_Invalid_Request = Error_Invalid_Request_temp;
+ assign Param1 = Param1_in;
+ assign challenge_enable = challenge_enable_temp;
 
 
 endmodule // responder

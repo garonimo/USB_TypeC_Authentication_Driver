@@ -14,8 +14,8 @@
 # CHANGE THESE THREE LINES FOR YOUR DESIGN
 #
 #TOOL INPUT
-SRC = USB_Host_model.v driver.v Responder.v get_digests.v
-TEST_FILE = Parameters.v get_digests.v 
+SRC = USB_Host_model.v driver.v Responder.v get_digests.v challenge.v
+TEST_FILE = Parameters.v challenge.v
 TESTBENCH = tb.v
 TBOUTPUT = USB_Host_model.vcd #THIS NEEDS TO MATCH THE OUTPUT FILE
 			#FROM YOUR TESTBENCH
@@ -53,5 +53,5 @@ simulate: $(COUTPUT)
 
 compile_test:
 	@iverilog -o prueba $(TEST_FILE)
-	@echo "Test file(s) compiled succesfully"
+	@echo "Test file(s): $(TEST_FILE) compiled succesfully"
 	@rm prueba

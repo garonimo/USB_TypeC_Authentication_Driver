@@ -20,10 +20,11 @@ module get_digests_answer
   reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
   reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
   reg Ack_out_temp;
+  reg Param1_digests = 1'b1;
 
   always @ (posedge clk) begin
     if (Ack_in) begin
-      header_temp = {8'h01,8'h01,8'h01,8'h07};
+      header_temp = {`PROTOCOL_VERSION,`DIGESTS_ANSWER_CMD,Param1_digests,`CERT_CHAINS_MASK};
       payload_temp = {32'h4568787,32'hAC786425,32'hF986550};
       Ack_out_temp = 1;
     end else begin
