@@ -34,9 +34,10 @@ module responder
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
   wire [`SIZE_OF_HEADER_VARS-1:0] Param1;
   reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header;
-  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_challenge,header_digests;
+  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_challenge,header_digests,header_error;
   reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_challenge,payload_digests;
+  wire payload_error; //must be erased
   reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
   reg [`MSG_LEN-1:0] auth_msg_resp_out_temp;
   reg resp_req_out_temp, Ack_in_get_digests;
