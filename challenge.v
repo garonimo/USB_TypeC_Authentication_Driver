@@ -22,8 +22,9 @@ module challenge_answer
   );
 
   reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
-  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
-  reg Ack_out_temp,Error_Invalid_Request_temp;
+  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
+  reg Ack_out_temp;
+  reg Error_Invalid_Request_temp = 0;
   reg [231:0] Payload_in;
 
 

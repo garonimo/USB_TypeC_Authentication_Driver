@@ -30,10 +30,13 @@ module responder
   integer current_timeout;
   reg Error_Busy_temp,Error_Unsupported_Protocol_temp,Error_Invalid_Request_temp = 0;
   wire Error_Invalid_Request,Error_Unspecified,Error_Busy,Error_Unsupported_Protocol;
+  wire Error_Invalid_Request_challenge;
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
   wire [`SIZE_OF_HEADER_VARS-1:0] Param1;
-  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header;
-  wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
+  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header;
+  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_challenge,header_digests;
+  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
+  wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_challenge,payload_digests;
   reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
   reg [`MSG_LEN-1:0] auth_msg_resp_out_temp;
   reg resp_req_out_temp, Ack_in_get_digests;
@@ -59,9 +62,9 @@ module responder
     (
       .clk(clk),
       .Ack_in(Ack_in_get_digests),
-      .header(header),
+      .header(header_digests),
       .Ack_out(Ack_out_get_digests),
-      .payload(payload)
+      .payload(payload_digests)
     );
 
   challenge_answer answer_to_challenge
@@ -70,10 +73,10 @@ module responder
       .Enable(challenge_enable),
       .auth_msg_resp_in(auth_msg_resp_in),
       .Param1(Param1),
-      .Error_Invalid_Request(Error_Invalid_Request),
-      .header(header),
+      .Error_Invalid_Request(Error_Invalid_Request_challenge),
+      .header(header_challenge),
       .Ack_out(challenge_answer_Ack_in),
-      .payload(payload)
+      .payload(payload_challenge)
     );
 
  //----------------------Lógica combinacional ---------------------------------
@@ -124,7 +127,8 @@ module responder
         end
      end //GET_DIGESTS
 
-     GET_CERTIFICATE: begin
+     GET_CERTIFICATE:
+     begin
         next_state = SEND_MSG;
      end
 
@@ -163,7 +167,7 @@ module responder
    if (reset == 1'b1) begin
      state <= IDLE;
    end
-   else if (Error_Busy_temp | Error_Unsupported_Protocol_temp | Error_Invalid_Request | Error_Unspecified) begin
+   else if (Error_Busy_temp | Error_Unsupported_Protocol_temp | Error_Invalid_Request | Error_Unspecified | Error_Invalid_Request_challenge) begin
      state <= GEN_ERROR;
    end
    else begin
@@ -186,17 +190,21 @@ module responder
          end
 
          GET_DIGESTS: begin
+            payload <= payload_digests;
+            header <= header_digests;
             Ack_in_get_digests <= 1'b1;
          end
 
          CHALLENGE:
          begin
+            header <= header_challenge;
+            payload <= payload_challenge;
             challenge_enable_temp = 1'b1;
          end
 
          SEND_MSG:
          begin
-           challenge_enable_temp = 1'b0;
+           challenge_enable_temp <= 1'b0;
            Ack_in_get_digests <= 1'b0;
            auth_msg_resp_out_temp <= {header,payload};
            resp_req_out_temp <= 1'b1;
