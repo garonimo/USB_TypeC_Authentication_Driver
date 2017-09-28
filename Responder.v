@@ -38,6 +38,8 @@ module responder
   reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_challenge,payload_digests;
   wire payload_error; //must be erased
+  wire Error_MSG_ready,error_response_enable;
+  reg error_response_enable_temp;
   reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
   reg [`MSG_LEN-1:0] auth_msg_resp_out_temp;
   reg resp_req_out_temp, Ack_in_get_digests;
@@ -79,6 +81,22 @@ module responder
       .Ack_out(challenge_answer_Ack_in),
       .payload(payload_challenge)
     );
+
+
+  error_response answer_with_error
+    (
+      .clk(clk),
+      .Enable(error_response_enable),
+      .Error_Invalid_Request(Error_Invalid_Request),
+      .Error_Invalid_Request_challenge(Error_Invalid_Request_challenge),
+      .Error_Busy(Error_Busy),
+      .Error_Unsupported_Protocol(Error_Unsupported_Protocol),
+      .Error_Unspecified(Error_Unspecified),
+      .header(header_error),
+      .payload(payload_error),
+      .MSG_ready(Error_MSG_ready)
+    );
+
 
  //----------------------Lógica combinacional ---------------------------------
  always @ (*)
@@ -144,7 +162,11 @@ module responder
 
      GEN_ERROR:
      begin
+      if (Error_MSG_ready) begin
         next_state = SEND_MSG;
+      end else begin
+        next_state = GEN_ERROR;
+      end
      end
 
      SEND_MSG:
@@ -168,7 +190,7 @@ module responder
    if (reset == 1'b1) begin
      state <= IDLE;
    end
-   else if (Error_Busy_temp | Error_Unsupported_Protocol_temp | Error_Invalid_Request | Error_Unspecified | Error_Invalid_Request_challenge) begin
+   else if ((Error_Busy_temp | Error_Unsupported_Protocol_temp | Error_Invalid_Request | Error_Unspecified) && (state != GEN_ERROR)) begin
      state <= GEN_ERROR;
    end
    else begin
@@ -203,8 +225,19 @@ module responder
             challenge_enable_temp = 1'b1;
          end
 
+         GEN_ERROR:
+         begin
+            header <= header_error;
+            payload <= payload_error;
+            error_response_enable_temp <= 1'b1;
+         end
+
          SEND_MSG:
          begin
+           error_response_enable_temp <= 1'b0;
+           Error_Busy_temp <= 1'b0;
+           Error_Unsupported_Protocol_temp <= 1'b0;
+           Error_Invalid_Request_temp <= 1'b0;
            challenge_enable_temp <= 1'b0;
            Ack_in_get_digests <= 1'b0;
            auth_msg_resp_out_temp <= {header,payload};
@@ -229,6 +262,7 @@ module responder
  assign Error_Invalid_Request = Error_Invalid_Request_temp;
  assign Param1 = Param1_in;
  assign challenge_enable = challenge_enable_temp;
+ assign error_response_enable  = error_response_enable_temp;
 
 
 endmodule // responder

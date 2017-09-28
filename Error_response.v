@@ -53,8 +53,13 @@ module error_response
           Param2 = 8'h01;
         end
 
-        default: begin      //Unspecified
+        1: begin      //Unspecified
           Param1 = 8'h04;
+          Param2 = 8'h00;
+        end
+
+        default: begin           //Invalid_Request-Challenge
+          Param1 = 8'h01;
           Param2 = 8'h00;
         end
       endcase
@@ -63,8 +68,8 @@ module error_response
       MSG_ready_temp = 1'b1;
     end //If Enable
     else begin
-      header_temp = 0;
-      MSG_ready_temp = 1'b0;
+      header_temp <= 0;
+      MSG_ready_temp <= 1'b0;
     end
   end //Always
 

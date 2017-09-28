@@ -32,6 +32,7 @@ module challenge_answer
     if (Enable) begin
       Payload_in = auth_msg_resp_in[255:24];
       if (Payload_in > 0) begin
+        Error_Invalid_Request_temp = 1'b0;
         header_temp = {`PROTOCOL_VERSION,`CHALLENGE_AUTH_CMD,Param1,`CERT_CHAINS_MASK};
         payload_temp = {`PROTOCOL_VERSION,`PROTOCOL_VERSION,`CAPABILITIES,8'h00,`CHALLENGE_AUTH_HASH};
         Ack_out_temp = 1'b1;
@@ -40,6 +41,7 @@ module challenge_answer
       end
     end //If Enable
     else begin
+      Error_Invalid_Request_temp = 1'b0;
       header_temp = 0;
       payload_temp = 0;
       Ack_out_temp = 1'b0;
