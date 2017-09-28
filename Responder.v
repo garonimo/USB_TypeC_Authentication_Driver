@@ -28,7 +28,10 @@ module responder
   parameter SEND_MSG = 8'b10000000;
   //variables
   integer current_timeout;
-  reg Error_Busy_temp,Error_Unsupported_Protocol_temp,Error_Invalid_Request_temp = 0;
+  reg Error_Busy_temp = 0;
+  reg Error_Unsupported_Protocol_temp = 0;
+  reg Error_Invalid_Request_temp = 0;
+  reg Error_Unspecified_temp = 0;
   wire Error_Invalid_Request,Error_Unspecified,Error_Busy,Error_Unsupported_Protocol;
   wire Error_Invalid_Request_challenge;
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
@@ -260,6 +263,7 @@ module responder
  assign Error_Busy = Error_Busy_temp;
  assign Error_Unsupported_Protocol = Error_Unsupported_Protocol_temp;
  assign Error_Invalid_Request = Error_Invalid_Request_temp;
+ assign Error_Unspecified = Error_Unspecified_temp;
  assign Param1 = Param1_in;
  assign challenge_enable = challenge_enable_temp;
  assign error_response_enable  = error_response_enable_temp;
