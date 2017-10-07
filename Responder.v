@@ -21,19 +21,25 @@ module responder
     output wire [`MSG_LEN-1:0] auth_msg_resp_out
   );
 
-  //states
+  //-------------------------------Parámetros-----------------------------------
+  //estados
   parameter IDLE = 8'b00000001, GET_DATA = 8'b00000010, GEN_ERROR = 8'b00000100;
   parameter WHICH_REQ = 8'b00001000, GET_CERTIFICATE = 8'b00010000;
   parameter CHALLENGE = 8'b00100000, GET_DIGESTS = 8'b01000000;
   parameter SEND_MSG = 8'b10000000;
-  //variables
-  integer current_timeout;
+
+  //--------------------------------Variables-----------------------------------
+  //Variables inicializadas
   reg Error_Busy_temp = 0;
   reg Error_Unsupported_Protocol_temp = 0;
   reg Error_Invalid_Request_temp = 0;
   reg Error_Unspecified_temp = 0;
+  integer resp_timeout_counter = 0;
+  //Variables de error
   wire Error_Invalid_Request,Error_Unspecified,Error_Busy,Error_Unsupported_Protocol;
   wire Error_Invalid_Request_challenge;
+  integer current_timeout;
+  //Variables del mensaje de autenticacion
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
   wire [`SIZE_OF_HEADER_VARS-1:0] Param1;
   reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header;
@@ -41,18 +47,19 @@ module responder
   reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_challenge,payload_digests;
   wire payload_error; //must be erased
+  //Variables para "handshakes"
   wire Error_MSG_ready,error_response_enable;
   reg error_response_enable_temp;
-  reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
   reg [`MSG_LEN-1:0] auth_msg_resp_out_temp;
   reg resp_req_out_temp, Ack_in_get_digests;
   wire Ack_out_get_digests,challenge_enable,challenge_answer_Ack_in;
   reg challenge_enable_temp;
+  //Variables de estado
+  reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
 
-  integer resp_timeout_counter = 0;
-
-
-  //-------------------------Inicio del código---------------------------------
+  //////////////////////////////////////////////////////////////////////////////
+  //-------------------------Inicio del código----------------------------------
+  //////////////////////////////////////////////////////////////////////////////
 
   //Para el manejo de los timeout
   always @(posedge clk) begin
@@ -117,15 +124,15 @@ module responder
 
      GET_DATA:
      begin
-          ProtocolVersion_in = auth_msg_resp_in[`MSG_LEN-1:`MSG_LEN-1-(`SIZE_OF_HEADER_VARS)];
+          ProtocolVersion_in = auth_msg_resp_in[`MSG_LEN-1:`MSG_LEN-(`SIZE_OF_HEADER_VARS)];
           if (ProtocolVersion_in != 1) begin
               Error_Unsupported_Protocol_temp <= 1'b1;
           end else begin
               Error_Unsupported_Protocol_temp <= 1'b0;
           end
-          MessageType_in = auth_msg_resp_in[`MSG_LEN-1-(`SIZE_OF_HEADER_VARS)-1:`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS)];
-          Param1_in = auth_msg_resp_in[`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS)-1:`MSG_LEN-1-(3*`SIZE_OF_HEADER_VARS)];
-          Param2_in = auth_msg_resp_in[`MSG_LEN-1-(3*`SIZE_OF_HEADER_VARS)-1:`MSG_LEN-1-(4*`SIZE_OF_HEADER_VARS)];
+          MessageType_in = auth_msg_resp_in[`MSG_LEN-1-(`SIZE_OF_HEADER_VARS):`MSG_LEN-(2*`SIZE_OF_HEADER_VARS)];
+          Param1_in = auth_msg_resp_in[`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS):`MSG_LEN-(3*`SIZE_OF_HEADER_VARS)];
+          Param2_in = auth_msg_resp_in[`MSG_LEN-1-(3*`SIZE_OF_HEADER_VARS):`MSG_LEN-(4*`SIZE_OF_HEADER_VARS)];
           next_state = WHICH_REQ;
      end // GET_DATA
 
