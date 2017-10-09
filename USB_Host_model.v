@@ -39,7 +39,7 @@ module USB_Host_model
 
   reg Ack_out_resp = 1;
 
-  reg [`MSG_LEN-1:0] auth_msg_resp_in_temp = {8'h01,8'h09,8'h01,8'h00,2048'h5165616516161691681};
+  reg [`MSG_LEN-1:0] auth_msg_resp_in_temp = {8'h01,8'h82,8'h00,8'h00,16'b00,16'h0103,2016'h10365616516471691681};
   assign auth_msg_resp_in = auth_msg_resp_in_temp;
 
   reg reset = 1;

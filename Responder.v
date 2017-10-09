@@ -37,21 +37,24 @@ module responder
   integer resp_timeout_counter = 0;
   //Variables de error
   wire Error_Invalid_Request,Error_Unspecified,Error_Busy,Error_Unsupported_Protocol;
-  wire Error_Invalid_Request_challenge;
+  wire Error_Invalid_Request_challenge,Error_Invalid_Request_GetCertificate;
   integer current_timeout;
   //Variables del mensaje de autenticacion
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
   wire [`SIZE_OF_HEADER_VARS-1:0] Param1;
   reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_challenge,header_digests,header_error;
+  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_GetCertificate;
   reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_challenge,payload_digests;
+  wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_GetCertificate;
   wire payload_error; //must be erased
   //Variables para "handshakes"
-  wire Error_MSG_ready,error_response_enable;
-  reg error_response_enable_temp;
+  wire Error_MSG_ready,error_response_enable,get_certificate_enable;
+  reg error_response_enable_temp,get_certificate_enable_temp;
   reg [`MSG_LEN-1:0] auth_msg_resp_out_temp;
   reg resp_req_out_temp, Ack_in_get_digests;
+  wire GetCertificate_answer_Ack_in;
   wire Ack_out_get_digests,challenge_enable,challenge_answer_Ack_in;
   reg challenge_enable_temp;
   //Variables de estado
@@ -92,6 +95,17 @@ module responder
       .payload(payload_challenge)
     );
 
+  get_certificate_answer answer_to_GetCertificate
+    (
+      .clk(clk),
+      .Enable(get_certificate_enable),
+      .auth_msg_resp_in(auth_msg_resp_in),
+      .Param1(Param1),
+      .Error_Invalid_Request(Error_Invalid_Request_GetCertificate),
+      .header(header_GetCertificate),
+      .Ack_out(GetCertificate_answer_Ack_in),
+      .payload(payload_GetCertificate)
+    );
 
   error_response answer_with_error
     (
@@ -158,7 +172,11 @@ module responder
 
      GET_CERTIFICATE:
      begin
-        next_state = SEND_MSG;
+         if (GetCertificate_answer_Ack_in == 1'b1) begin
+           next_state = SEND_MSG;
+         end else begin
+           next_state = GET_CERTIFICATE;
+         end
      end
 
      CHALLENGE:
@@ -235,6 +253,11 @@ module responder
             challenge_enable_temp = 1'b1;
          end
 
+         GET_CERTIFICATE:
+         begin
+            get_certificate_enable_temp = 1'b1;
+         end
+
          GEN_ERROR:
          begin
             header <= header_error;
@@ -249,6 +272,7 @@ module responder
            Error_Unsupported_Protocol_temp <= 1'b0;
            Error_Invalid_Request_temp <= 1'b0;
            challenge_enable_temp <= 1'b0;
+           get_certificate_enable_temp = 1'b0;
            Ack_in_get_digests <= 1'b0;
            auth_msg_resp_out_temp <= {header,payload};
            resp_req_out_temp <= 1'b1;
@@ -274,6 +298,7 @@ module responder
  assign Param1 = Param1_in;
  assign challenge_enable = challenge_enable_temp;
  assign error_response_enable  = error_response_enable_temp;
+ assign get_certificate_enable = get_certificate_enable_temp;
 
 
 endmodule // responder
