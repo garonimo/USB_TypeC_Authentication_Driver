@@ -255,6 +255,8 @@ module responder
 
          GET_CERTIFICATE:
          begin
+            header <= header_GetCertificate;
+            payload <= payload_GetCertificate;
             get_certificate_enable_temp = 1'b1;
          end
 

@@ -5,8 +5,8 @@
 *
 *	Autor: Andrés Sánchez López - B26214
 *
-*	Descripción: Este archivo es para crear los mensajes de solicitud de certificados,
-* y también para crear la respuesta a estos
+*	Descripción: Este archivo es para responder los mensajes de solicitud de certificados
+*
 */
 
 
@@ -35,19 +35,18 @@ module get_certificate_answer
   always @ (posedge clk) begin
     if (Enable) begin
       Payload_in = auth_msg_resp_in[2055:0];
-      if (SLOT1 == 2'b01) begin
-        offset = auth_msg_resp_in[`MSG_LEN-1-(4*`SIZE_OF_HEADER_VARS):`MSG_LEN-(6*`SIZE_OF_HEADER_VARS)];
-        length = auth_msg_resp_in[`MSG_LEN-1-(6*`SIZE_OF_HEADER_VARS):`MSG_LEN-(8*`SIZE_OF_HEADER_VARS)];
+      offset = auth_msg_resp_in[`MSG_LEN-1-(4*`SIZE_OF_HEADER_VARS):`MSG_LEN-(6*`SIZE_OF_HEADER_VARS)];
+      length = auth_msg_resp_in[`MSG_LEN-1-(6*`SIZE_OF_HEADER_VARS):`MSG_LEN-(8*`SIZE_OF_HEADER_VARS)];
 
 ////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-        case (Param1)
+      case (Param1)
 
-          SLOT0:
-          begin
-            case (offset)
+        SLOT0:
+        begin
+          case (offset)
               0:
               begin
                 if (length == `SLOT0_CERT1_LENGTH) begin
@@ -104,8 +103,8 @@ module get_certificate_answer
 
               default: Error_Invalid_Request_temp <= 1'b1;
 
-            endcase
-          end //case SLOT0
+          endcase
+        end //case SLOT0
 
 //------------------------------------------------------------------------------
 
@@ -215,10 +214,6 @@ module get_certificate_answer
         header_temp = {`PROTOCOL_VERSION, `CERTIFICATE_ANSWER_CMD, Param1, 8'h00};
         Ack_out_temp = 1'b1;
 
-      end //if Payload_in
-      else begin
-        Error_Invalid_Request_temp = 1'b1;
-      end
     end //(Enable)
     else begin
       Error_Invalid_Request_temp = 1'b0;
