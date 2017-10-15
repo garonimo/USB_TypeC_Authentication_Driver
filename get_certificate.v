@@ -19,6 +19,7 @@ module get_certificate_answer
     output wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header,
     output wire Ack_out,
     output wire Error_Invalid_Request,
+    output wire [15:0] wLength,
     output wire [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] payload
   );
 
@@ -30,6 +31,7 @@ module get_certificate_answer
   reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] Payload_in;
   reg [15:0] offset,length;
   reg Error_Invalid_Request_temp = 0;
+  reg [15:0] wLength_temp;
 
 
   always @ (posedge clk) begin
@@ -212,6 +214,7 @@ module get_certificate_answer
 //------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
         header_temp = {`PROTOCOL_VERSION, `CERTIFICATE_ANSWER_CMD, Param1, 8'h00};
+        wLength_temp <= length;
         Ack_out_temp = 1'b1;
 
     end //(Enable)
@@ -228,5 +231,6 @@ module get_certificate_answer
   assign payload = payload_temp;
   assign Ack_out = Ack_out_temp;
   assign Error_Invalid_Request = Error_Invalid_Request_temp;
+  assign wLength = wLength_temp;
 
 endmodule // get_certificate_answer

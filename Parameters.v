@@ -2,7 +2,8 @@
 
 `define parameters
 
-`define SIZE_OF_STATES_RESP       8
+`define SIZE_OF_STATES_RESP       9
+`define SIZE_OF_STATES_DRIVER     9
 `define	SIZE_OF_HEADER_VARS       8
 `define SIZE_OF_HEADER_IN_BYTES   4
 `define CERTIFICATE_TIMEOUT       135
@@ -10,6 +11,17 @@
 `define GET_DIGESTS_TIMEOUT       135
 `define MSG_LEN_IN_BYTES          260
 `define MSG_LEN                   `MSG_LEN_IN_BYTES*8
+`define GET_CERTIFICATE_TIMEOUT   20000000     //200 ms
+`define CERTIFICATE_ANW_TIMEOUT   13500000     //135 ms
+`define CHALLENGE_TIMEOUT         120000000    //1200 ms
+`define CHALLENGE_TIMEOUT_AUTH    63500000     //635 ms
+`define DIGEST_REQ_TIMEOUT        20000000     //200 ms
+`define DIGEST_ANW_TIMEOUT        13500000     //135 ms
+`define GET_CERTIFICATE_TIMEOUT_USB   1000000      //100 ms
+`define CERTIFICATE_ANW_TIMEOUT_USB   50000000     //500 ms
+`define CHALLENGE_TIMEOUT_USB         1000000      //100 ms
+`define CHALLENGE_TIMEOUT_AUTH_USB    60000000     //600 ms
+`define DIGEST_REQ_TIMEOUT_USB        100000000    //1000 ms
 `define CERT_CHAINS               3
 `define CERT_CHAINS_MASK          8'h07
 `define PROTOCOL_VERSION          8'h01

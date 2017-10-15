@@ -25,6 +25,9 @@ wire TX1_p,TX1_m,VBUS,CC1,D1_p,D1_m,SBU1,RX2_m,RX2_p;
 wire RX1_p,RX1_m,SBU2,D2_m,D2_p,CC2,TX2_m,TX2_p,clk,reset;
 wire resp_req_in,resp_req_out,Ack_out_resp;
 wire [`MSG_LEN-1:0] auth_msg_resp_out, auth_msg_resp_in;
+wire [7:0] bmRequestType;
+wire [7:0] bRequest;
+wire [15:0] wLength;
 
 
 USB_Host_model HOST
@@ -41,15 +44,6 @@ USB_Host_model HOST
     .clk(clk)
   );
 
-  driver_authentication_test FSM_TEST
-    (
-      .CC1(CC1),
-      .CC2(CC2),
-      .TX2_m(TX2_m),
-      .TX2_p(TX2_p),
-      .reset(reset),
-      .clk(clk)
-    );
 
   responder resp_test
     (
@@ -59,6 +53,9 @@ USB_Host_model HOST
       .auth_msg_resp_in(auth_msg_resp_in),
       .Ack_in(Ack_out_resp),
       .resp_req_out(resp_req_out),
+      .bmRequestType(bmRequestType),
+      .bRequest(bRequest),
+      .wLength(wLength),
       .auth_msg_resp_out(auth_msg_resp_out)
     );
 

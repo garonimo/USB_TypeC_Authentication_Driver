@@ -18,15 +18,18 @@ module responder
     input wire [`MSG_LEN-1:0] auth_msg_resp_in,
     input wire Ack_in,
     output wire resp_req_out,
+    output wire [7:0] bmRequestType,
+    output wire [7:0] bRequest,
+    output wire [15:0] wLength,
     output wire [`MSG_LEN-1:0] auth_msg_resp_out
   );
 
   //-------------------------------Parámetros-----------------------------------
   //estados
-  parameter IDLE = 8'b00000001, GET_DATA = 8'b00000010, GEN_ERROR = 8'b00000100;
-  parameter WHICH_REQ = 8'b00001000, GET_CERTIFICATE = 8'b00010000;
-  parameter CHALLENGE = 8'b00100000, GET_DIGESTS = 8'b01000000;
-  parameter SEND_MSG = 8'b10000000;
+  parameter IDLE = 9'b000000001, GET_DATA = 9'b000000010, GEN_ERROR = 9'b000000100;
+  parameter WHICH_REQ = 9'b000001000, GET_CERTIFICATE = 9'b000010000;
+  parameter CHALLENGE = 9'b000100000, GET_DIGESTS = 9'b001000000;
+  parameter SEND_MSG = 9'b010000000, ACK = 9'b100000000;
 
   //--------------------------------Variables-----------------------------------
   //Variables inicializadas
@@ -38,7 +41,7 @@ module responder
   //Variables de error
   wire Error_Invalid_Request,Error_Unspecified,Error_Busy,Error_Unsupported_Protocol;
   wire Error_Invalid_Request_challenge,Error_Invalid_Request_GetCertificate;
-  integer current_timeout;
+  integer current_timeout = `CHALLENGE_TIMEOUT_AUTH;
   //Variables del mensaje de autenticacion
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
   wire [`SIZE_OF_HEADER_VARS-1:0] Param1;
@@ -49,6 +52,11 @@ module responder
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_challenge,payload_digests;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_GetCertificate;
   wire payload_error; //must be erased
+  //Variables para mensajes sobre USB
+  reg [7:0] bmRequestType_temp;
+  reg [7:0] bRequest_temp;
+  reg [15:0] wLength_temp;
+  wire [15:0] wLength_GetCertificate;
   //Variables para "handshakes"
   wire Error_MSG_ready,error_response_enable,get_certificate_enable;
   reg error_response_enable_temp,get_certificate_enable_temp;
@@ -59,6 +67,7 @@ module responder
   reg challenge_enable_temp;
   //Variables de estado
   reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
+
 
   //////////////////////////////////////////////////////////////////////////////
   //-------------------------Inicio del código----------------------------------
@@ -71,8 +80,18 @@ module responder
     end
     else if (resp_req_in) begin
       resp_timeout_counter += 1;
+    end else begin
+      resp_timeout_counter = 0;
+    end
+
+    if (resp_timeout_counter >= current_timeout) begin
+      Error_Busy_temp <= 1'b1;
+    end else begin
+      Error_Busy_temp <= 1'b0;
     end
   end
+
+//---------------------------Instancias-----------------------------------------
 
   get_digests_answer answer_to_digests
     (
@@ -104,6 +123,7 @@ module responder
       .Error_Invalid_Request(Error_Invalid_Request_GetCertificate),
       .header(header_GetCertificate),
       .Ack_out(GetCertificate_answer_Ack_in),
+      .wLength(wLength_GetCertificate),
       .payload(payload_GetCertificate)
     );
 
@@ -113,6 +133,7 @@ module responder
       .Enable(error_response_enable),
       .Error_Invalid_Request(Error_Invalid_Request),
       .Error_Invalid_Request_challenge(Error_Invalid_Request_challenge),
+      .Error_Invalid_Request_GetCertificate(Error_Invalid_Request_GetCertificate),
       .Error_Busy(Error_Busy),
       .Error_Unsupported_Protocol(Error_Unsupported_Protocol),
       .Error_Unspecified(Error_Unspecified),
@@ -199,11 +220,21 @@ module responder
 
      SEND_MSG:
      begin
+       if (auth_msg_resp_out) begin
+          next_state = ACK;
+       end
+       else begin
+          next_state = SEND_MSG;
+       end
+     end
+
+     ACK:
+     begin
        if (Ack_in) begin
           next_state = IDLE;
        end
        else begin
-          next_state = SEND_MSG;
+          next_state = ACK;
        end
      end
 
@@ -235,12 +266,18 @@ module responder
      else begin
        case (state)
 
-         IDLE: begin
+         IDLE:
+         begin
+           resp_timeout_counter <= 0;
            resp_req_out_temp <= 1'b0;
            auth_msg_resp_out_temp <= 0;
          end
 
          GET_DIGESTS: begin
+            bmRequestType_temp <= 128;
+            bRequest_temp <= 24;
+            wLength_temp <= 260;
+            current_timeout <= `DIGEST_ANW_TIMEOUT;
             payload <= payload_digests;
             header <= header_digests;
             Ack_in_get_digests <= 1'b1;
@@ -248,6 +285,10 @@ module responder
 
          CHALLENGE:
          begin
+            bmRequestType_temp <= 0;
+            bRequest_temp <= 25;
+            wLength_temp <= 32;
+            current_timeout <= `CHALLENGE_TIMEOUT_AUTH;
             header <= header_challenge;
             payload <= payload_challenge;
             challenge_enable_temp = 1'b1;
@@ -255,6 +296,10 @@ module responder
 
          GET_CERTIFICATE:
          begin
+            bmRequestType_temp <= 0;
+            bRequest_temp <= 25;
+            wLength_temp <= wLength_GetCertificate;
+            current_timeout <= `CERTIFICATE_ANW_TIMEOUT;
             header <= header_GetCertificate;
             payload <= payload_GetCertificate;
             get_certificate_enable_temp = 1'b1;
@@ -269,6 +314,7 @@ module responder
 
          SEND_MSG:
          begin
+          //Primero se borran algunas variables que pudieron quedar en uno
            error_response_enable_temp <= 1'b0;
            Error_Busy_temp <= 1'b0;
            Error_Unsupported_Protocol_temp <= 1'b0;
@@ -276,7 +322,12 @@ module responder
            challenge_enable_temp <= 1'b0;
            get_certificate_enable_temp = 1'b0;
            Ack_in_get_digests <= 1'b0;
+          //Luego se manda el mensaje
            auth_msg_resp_out_temp <= {header,payload};
+         end
+
+         ACK:
+         begin
            resp_req_out_temp <= 1'b1;
          end
 
@@ -301,6 +352,9 @@ module responder
  assign challenge_enable = challenge_enable_temp;
  assign error_response_enable  = error_response_enable_temp;
  assign get_certificate_enable = get_certificate_enable_temp;
+ assign bmRequestType = bmRequestType_temp;
+ assign bRequest = bRequest_temp;
+ assign wLength = wLength_temp;
 
 
 endmodule // responder
