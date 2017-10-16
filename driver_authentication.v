@@ -14,14 +14,13 @@ module authentication_driver
   (
     input wire clk,
     input wire reset,
-    input wire resp_req_in,
-    input wire [`MSG_LEN-1:0] auth_msg_resp_in,
+    input wire [`MSG_LEN-1:0] auth_msg_in,
     input wire Ack_in,
     input wire [7:0] pending_auth_request,
     output wire PD_in_ready,
-    output wire DEGUG_in_ready,
-    output wire resp_req_out,
-    output wire [`MSG_LEN-1:0] auth_msg_resp_out
+    output wire DEBUG_in_ready,
+    output wire auth_msg_ready,
+    output wire [`MSG_LEN-1:0] auth_msg_out
   );
 
   //-------------------------------Parámetros-----------------------------------
@@ -41,19 +40,58 @@ module authentication_driver
   wire Responder_Enable, Responder_ready;
   wire Initiator_Enable, Initiator_ready;
   reg  Responder_Enable_temp, Initiator_Enable_temp;
-  wire auth_msg_ready;
   reg auth_msg_ready_temp;
   reg PD_in_ready_temp,DEBUG_in_ready_temp;
   reg [7:0] auth_msg_resp_out_temp, pending_auth_request_temp;
 
-//----------------------Combinational Logic-------------------------------------
+//Auth MSG Variables
+  wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
+  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header;
+  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
+  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
+  wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_responder;
+  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_responder;
+  wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_initiator;
+  wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_initiator;
+  reg [`MSG_LEN-1:0] auth_msg_out_temp;
+  wire Ack_out_resp;
+  reg Ack_out_resp_temp;
+  wire [7:0] bmRequestType;
+  wire [7:0] bRequest;
+  wire [15:0] wLength;
+
+////////////////////////////////////////////////////////////////////////////////
+//-------------------------Inicio del código------------------------------------
+////////////////////////////////////////////////////////////////////////////////
+
+  responder resp_test
+    (
+      .clk(clk),
+      .reset(reset),
+      .resp_req_in(Responder_Enable),
+      .auth_msg_resp_in(auth_msg_in),
+      .Ack_in(Ack_out_resp),
+      .resp_req_out(Responder_ready),
+      .bmRequestType(bmRequestType),
+      .bRequest(bRequest),
+      .wLength(wLength),
+      .header(header_responder),
+      .payload(payload_responder)
+    );
+
+
+////////////////////////////////////////////////////////////////////////////////
+//-------------------------Máquina de estados-----------------------------------
+////////////////////////////////////////////////////////////////////////////////
+
+//----------------------Lógica combinacional------------------------------------
   always @ (*) begin : FSM_COMB
     next_state = 0;
     case (state)
 
         IDLE: begin
               if (pending_auth_request) begin
-                next_state = GET_REQUESTER_MSG;
+                next_state = GET_DATA_OF_REQUESTER;
               end
               else begin
                 next_state = IDLE;
@@ -61,7 +99,8 @@ module authentication_driver
         end //IDLE
 
 
-        GET_DATA_OF_REQUESTER: begin
+        GET_DATA_OF_REQUESTER:
+        begin
               current_auth_request = pending_auth_request;
               requester = current_auth_request[7:6];
               initiator_or_responder = current_auth_request[5:4];
@@ -78,10 +117,10 @@ module authentication_driver
 
         GET_REQUESTER_MSG:
         begin
-            if (requester == 2'b01) begin
+            if (initiator_or_responder == 2'b01) begin
               next_state = RESPONDER;
             end
-            else if (requester == 2'b10) begin
+            else if (initiator_or_responder == 2'b10) begin
               next_state = INITIATOR;
             end
             else begin
@@ -93,11 +132,7 @@ module authentication_driver
         RESPONDER:
         begin
             if (Responder_ready == 1'b1) begin
-              if (USB_or_not == 1'b1) begin
-                next_state = USB_MSG;
-              end else begin
                 next_state = SEND_MSG;
-              end
             end else begin
               next_state = RESPONDER;
             end
@@ -107,26 +142,16 @@ module authentication_driver
         INITIATOR:
         begin
             if (Initiator_ready == 1'b1) begin
-              if (USB_or_not == 1'b1) begin
-                next_state = USB_MSG;
-              end else begin
                 next_state = SEND_MSG;
-              end
             end else begin
               next_state = INITIATOR;
             end
-        end //INITIATOR
-
-
-        USB_MSG:
-        begin
-            next_state = SEND_MSG;
-        end //USB_MSG
+        end //RESPONDER
 
 
         SEND_MSG:
         begin
-            if (auth_msg_resp_out) begin
+            if (auth_msg_out) begin
               next_state = ACK;
             end else begin
               next_state = SEND_MSG;
@@ -161,21 +186,22 @@ module authentication_driver
 //---------------------------output logic---------------------------------------
   always @ (negedge clk) begin : FSM_OUTPUT
     if (reset == 1'b1) begin
-      auth_msg_resp_out_temp <= 1'b0;
+      auth_msg_out_temp <= 1'b0;
     end
     else begin
       case (state)
 
-        IDLE: begin
-          auth_msg_resp_out_temp <= 1'b0;
+        IDLE:
+        begin
+          Ack_out_resp_temp <= 1'b0;
+          auth_msg_out_temp <= 1'b0;
           PD_in_ready_temp <= 1'b0;
           DEBUG_in_ready_temp <= 1'b0;
           auth_msg_ready_temp <= 1'b0;
         end
 
-        GET_REQUESTER_MSG:
+        GET_DATA_OF_REQUESTER:
         begin
-          pending_auth_request_temp <= 0;
           if (requester == 2'b01) begin
             PD_in_ready_temp <= 1'b1;
           end
@@ -188,38 +214,48 @@ module authentication_driver
           end
         end
 
+        GET_REQUESTER_MSG:
+        begin
+          pending_auth_request_temp <= 0;
+        end
+
         RESPONDER:
         begin
+          header_temp <= header_responder;
+          payload_temp <= payload_responder;
           Responder_Enable_temp <= 1'b1;
         end
 
         INITIATOR:
         begin
+          header_temp <= header_initiator;
+          payload_temp <= payload_initiator;
           Initiator_Enable_temp <= 1'b1;
-        end
-
-        USB_MSG:
-        begin
-          Responder_Enable_temp <= 1'b0;
-          Initiator_Enable_temp <= 1'b0;
         end
 
         SEND_MSG:
         begin
+          Ack_out_resp_temp <= 1'b1;
           Responder_Enable_temp <= 1'b0;
           Initiator_Enable_temp <= 1'b0;
-          auth_msg_resp_out_temp <= 256;
+          if (USB_or_not) begin
+            auth_msg_out_temp <= {bmRequestType,bRequest,header,wLength,payload};
+          end else begin
+            auth_msg_out_temp <= {header,payload};
+          end
         end
 
         ACK:
         begin
+          Ack_out_resp_temp <= 1'b0;
           auth_msg_ready_temp <= 1'b1;
         end
 
         default: begin
-          auth_msg_resp_out_temp <= 1'b0;
+          auth_msg_out_temp <= 1'b0;
           PD_in_ready_temp <= 1'b0;
           DEBUG_in_ready_temp <= 1'b0;
+          auth_msg_ready_temp <= 1'b0;
         end
 
       endcase
@@ -230,8 +266,11 @@ module authentication_driver
 assign Responder_Enable = Responder_Enable_temp;
 assign Initiator_Enable = Initiator_Enable_temp;
 assign auth_msg_ready = auth_msg_ready_temp;
-assign auth_msg_resp_out = auth_msg_resp_out_temp;
+assign auth_msg_out = auth_msg_out_temp;
 assign PD_in_ready = PD_in_ready_temp;
 assign DEBUG_in_ready = DEBUG_in_ready_temp;
+assign Ack_out_resp = Ack_out_resp_temp;
+assign header = header_temp;
+assign payload = payload_temp;
 
 endmodule // driver_authentication
