@@ -12,10 +12,11 @@
 module timeout
   (
     input wire clk,
-    input wire Enable,
+    input wire [7:0] Enable,
+    input wire Enable_Init_or_Resp,
     input wire reset,
     input wire auth_msg_ready,
-    input wire current_timeout,
+    input wire [31:0] current_timeout,
     output wire Error_Busy
   );
 
@@ -26,7 +27,7 @@ module timeout
     if (auth_msg_ready | reset) begin
       Timeout_counter = 0;
     end
-    else if (Enable) begin
+    else if (Enable | Enable_Init_or_Resp) begin
       Timeout_counter += 1;
     end else begin
       Timeout_counter = 0;

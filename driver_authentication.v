@@ -8,7 +8,6 @@
 *	Descripción: Este archivo contiene
 */
 
-`include "Parameters.v"
 
 module authentication_driver
   (
@@ -35,10 +34,14 @@ module authentication_driver
   reg [`SIZE_OF_STATES_DRIVER-1:0] state, next_state;
   reg [7:0] current_auth_request;
   reg [1:0] requester,initiator_or_responder,USB_or_not;
+  wire Error_Busy_Responder, Error_Busy_Initiator;
 
 //handshakes
   wire Responder_Enable, Responder_ready;
   wire Initiator_Enable, Initiator_ready;
+  wire pending_init_msg;
+  wire [1:0] slot;
+  reg [1:0] slot_temp = 0;
   reg  Responder_Enable_temp, Initiator_Enable_temp;
   reg auth_msg_ready_temp;
   reg PD_in_ready_temp,DEBUG_in_ready_temp;
@@ -54,11 +57,18 @@ module authentication_driver
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_initiator;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_initiator;
   reg [`MSG_LEN-1:0] auth_msg_out_temp;
-  wire Ack_out_resp;
-  reg Ack_out_resp_temp;
-  wire [7:0] bmRequestType;
-  wire [7:0] bRequest;
-  wire [15:0] wLength;
+  wire Ack_out_resp, Ack_out_init;
+  reg Ack_out_resp_temp, Ack_out_init_temp;
+  wire [7:0] bmRequestType, bmRequestType_Responder, bmRequestType_Initiator;
+  wire [7:0] bRequest, bRequest_Responder, bRequest_Initiator;
+  wire [15:0] wLength, wLength_Responder, wLength_Initiator;
+  reg [7:0] bmRequestType_temp;
+  reg [7:0] bRequest_temp;
+  reg [15:0] wLength_temp;
+  wire [31:0] current_timeout_responder;
+  wire [31:0] current_timeout_initiator;
+  wire [1:0] type_of_request;
+  reg [1:0] type_of_request_temp;
 
 ////////////////////////////////////////////////////////////////////////////////
 //-------------------------Inicio del código------------------------------------
@@ -72,11 +82,53 @@ module authentication_driver
       .auth_msg_resp_in(auth_msg_in),
       .Ack_in(Ack_out_resp),
       .resp_req_out(Responder_ready),
-      .bmRequestType(bmRequestType),
-      .bRequest(bRequest),
-      .wLength(wLength),
+      .bmRequestType(bmRequestType_Responder),
+      .bRequest(bRequest_Responder),
+      .wLength(wLength_Responder),
+      .current_timeout(current_timeout_responder),
       .header(header_responder),
       .payload(payload_responder)
+    );
+
+  initiator initiator_driver
+    (
+      .clk(clk),
+      .reset(reset),
+      .init_req_in(Initiator_Enable),
+      .auth_msg_init_in(auth_msg_in),
+      .Ack_in(Ack_out_init),
+      .type_of_request(type_of_request),
+      .Ack_out(Initiator_ready),
+      .bmRequestType(bmRequestType_Initiator),
+      .bRequest(bRequest_Initiator),
+      .wLength(wLength_Initiator),
+      .current_timeout(current_timeout_initiator),
+      .pending_auth_msg_to_send(pending_init_msg),
+      .payload(payload_initiator),
+      .slot(slot),
+      .header(header_initiator)
+    );
+
+  timeout timeout_controller_responder
+    (
+      .clk(clk),
+      .Enable(pending_auth_request),
+      .Enable_Init_or_Resp(Responder_Enable),
+      .reset(reset),
+      .auth_msg_ready(auth_msg_ready),
+      .current_timeout(current_timeout_responder),
+      .Error_Busy(Error_Busy_Responder)
+    );
+
+  timeout timeout_controller_initiator
+    (
+      .clk(clk),
+      .Enable(pending_auth_request),
+      .Enable_Init_or_Resp(Responder_Enable),
+      .reset(reset),
+      .auth_msg_ready(auth_msg_ready),
+      .current_timeout(current_timeout_initiator),
+      .Error_Busy(Error_Busy_Initiator)
     );
 
 
@@ -105,6 +157,7 @@ module authentication_driver
               requester = current_auth_request[7:6];
               initiator_or_responder = current_auth_request[5:4];
               USB_or_not = current_auth_request[3:2];
+              type_of_request_temp = current_auth_request[1:0];
               if ((requester == 2'b01) || (requester == 2'b10)) begin
                 next_state = GET_REQUESTER_MSG;
               end
@@ -223,6 +276,9 @@ module authentication_driver
         begin
           header_temp <= header_responder;
           payload_temp <= payload_responder;
+          bmRequestType_temp <= bmRequestType_Responder;
+          bRequest_temp <= bRequest_Responder;
+          wLength_temp <= wLength_Responder;
           Responder_Enable_temp <= 1'b1;
         end
 
@@ -230,11 +286,15 @@ module authentication_driver
         begin
           header_temp <= header_initiator;
           payload_temp <= payload_initiator;
+          bmRequestType_temp <= bmRequestType_Initiator;
+          bRequest_temp <= bRequest_Initiator;
+          wLength_temp <= wLength_Initiator;
           Initiator_Enable_temp <= 1'b1;
         end
 
         SEND_MSG:
         begin
+          Ack_out_init_temp <= 1'b1;
           Ack_out_resp_temp <= 1'b1;
           Responder_Enable_temp <= 1'b0;
           Initiator_Enable_temp <= 1'b0;
@@ -247,6 +307,7 @@ module authentication_driver
 
         ACK:
         begin
+          Ack_out_init_temp <= 1'b0;
           Ack_out_resp_temp <= 1'b0;
           auth_msg_ready_temp <= 1'b1;
         end
@@ -270,7 +331,13 @@ assign auth_msg_out = auth_msg_out_temp;
 assign PD_in_ready = PD_in_ready_temp;
 assign DEBUG_in_ready = DEBUG_in_ready_temp;
 assign Ack_out_resp = Ack_out_resp_temp;
+assign type_of_request = type_of_request_temp;
+assign bmRequestType = bmRequestType_temp;
+assign bRequest = bRequest_temp;
+assign wLength = wLength_temp;
 assign header = header_temp;
 assign payload = payload_temp;
+assign Ack_out_init = Ack_out_init_temp;
+assign slot = slot_temp;
 
 endmodule // driver_authentication

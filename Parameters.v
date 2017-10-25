@@ -4,6 +4,7 @@
 
 `define SIZE_OF_STATES_RESP       9
 `define SIZE_OF_STATES_DRIVER     9
+`define SIZE_OF_STATES_INIT       9
 `define	SIZE_OF_HEADER_VARS       8
 `define SIZE_OF_HEADER_IN_BYTES   4
 `define CERTIFICATE_TIMEOUT       135
@@ -24,6 +25,13 @@
 `define DIGEST_REQ_TIMEOUT_USB        100000000    //1000 ms
 `define CERT_CHAINS               3
 `define CERT_CHAINS_MASK          8'h07
+`define HEADER_DIGESTS            {8'h01,8'h81,8'h00,8'h00}
+`define HEADER_CHALLENGE_SLOT0    {8'h01,8'h83,8'h00,8'h00}
+`define HEADER_CHALLENGE_SLOT1    {8'h01,8'h83,8'h01,8'h00}
+`define HEADER_CHALLENGE_SLOT2    {8'h01,8'h83,8'h02,8'h00}
+`define HEADER_CERTIFICATE_SLOT0  {8'h01,8'h82,8'h00,8'h00}
+`define HEADER_CERTIFICATE_SLOT1  {8'h01,8'h82,8'h01,8'h00}
+`define HEADER_CERTIFICATE_SLOT2  {8'h01,8'h82,8'h02,8'h00}
 `define PROTOCOL_VERSION          8'h01
 `define CERTIFICATE_ANSWER_CMD    8'h02
 `define DIGESTS_ANSWER_CMD        8'h01

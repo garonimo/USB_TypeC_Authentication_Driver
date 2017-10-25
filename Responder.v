@@ -8,7 +8,6 @@
 *	Descripción: Este archivo es el authentication responder
 */
 
-`include "Parameters.v"
 
 module responder
   (
@@ -17,10 +16,12 @@ module responder
     input wire resp_req_in,
     input wire [`MSG_LEN-1:0] auth_msg_resp_in,
     input wire Ack_in,
+    input wire [1:0] slot,
     output wire resp_req_out,
     output wire [7:0] bmRequestType,
     output wire [7:0] bRequest,
     output wire [15:0] wLength,
+    output wire [31:0] current_timeout,
     output wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload,
     output wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header
   );
@@ -42,7 +43,7 @@ module responder
   //Variables de error
   wire Error_Invalid_Request,Error_Unspecified,Error_Busy,Error_Unsupported_Protocol;
   wire Error_Invalid_Request_challenge,Error_Invalid_Request_GetCertificate;
-  integer current_timeout = `CHALLENGE_TIMEOUT_AUTH;
+  reg [31:0] current_timeout_temp = `CHALLENGE_TIMEOUT_AUTH;
   //Variables del mensaje de autenticacion
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
   wire [`SIZE_OF_HEADER_VARS-1:0] Param1;
@@ -74,23 +75,6 @@ module responder
   //-------------------------Inicio del código----------------------------------
   //////////////////////////////////////////////////////////////////////////////
 
-  //Para el manejo de los timeout
-  always @(posedge clk) begin
-    if (resp_req_out | reset) begin
-      resp_timeout_counter = 0;
-    end
-    else if (resp_req_in) begin
-      resp_timeout_counter += 1;
-    end else begin
-      resp_timeout_counter = 0;
-    end
-
-    if (resp_timeout_counter >= current_timeout) begin
-      Error_Busy_temp <= 1'b1;
-    end else begin
-      Error_Busy_temp <= 1'b0;
-    end
-  end
 
 //---------------------------Instancias-----------------------------------------
 
@@ -147,7 +131,7 @@ module responder
  //----------------------Lógica combinacional ---------------------------------
  always @ (*)
   begin : RESPONDER_COMB
-   next_state = 7'b0;
+   next_state = 9'b0;
    case (state)
      IDLE: begin
            if (resp_req_in == 1'b1) begin
@@ -280,7 +264,7 @@ module responder
             bmRequestType_temp <= 128;
             bRequest_temp <= 24;
             wLength_temp <= 260;
-            current_timeout <= `DIGEST_ANW_TIMEOUT;
+            current_timeout_temp <= `DIGEST_ANW_TIMEOUT;
             payload_temp <= payload_digests;
             header_temp <= header_digests;
             Ack_in_get_digests <= 1'b1;
@@ -291,7 +275,7 @@ module responder
             bmRequestType_temp <= 0;
             bRequest_temp <= 25;
             wLength_temp <= 32;
-            current_timeout <= `CHALLENGE_TIMEOUT_AUTH;
+            current_timeout_temp <= `CHALLENGE_TIMEOUT_AUTH;
             header_temp <= header_challenge;
             payload_temp <= payload_challenge;
             challenge_enable_temp = 1'b1;
@@ -302,7 +286,7 @@ module responder
             bmRequestType_temp <= 0;
             bRequest_temp <= 25;
             wLength_temp <= wLength_GetCertificate;
-            current_timeout <= `CERTIFICATE_ANW_TIMEOUT;
+            current_timeout_temp <= `CERTIFICATE_ANW_TIMEOUT;
             header_temp <= header_GetCertificate;
             payload_temp <= payload_GetCertificate;
             get_certificate_enable_temp = 1'b1;
@@ -357,6 +341,6 @@ module responder
  assign bmRequestType = bmRequestType_temp;
  assign bRequest = bRequest_temp;
  assign wLength = wLength_temp;
-
+ assign current_timeout = current_timeout_temp;
 
 endmodule // responder

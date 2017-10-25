@@ -57,7 +57,7 @@ module PD_DEBUG_Driver_model
   reg [`MSG_LEN-1:0] auth_msg_in_temp = {8'h01,8'h82,8'h00,8'h00,16'b00,16'h0103,2016'h10365616516471691681};
   assign auth_msg_in = auth_msg_in_temp;
 
-  reg [7:0] pending_auth_request_temp = {2'b01,2'b01,2'b00,2'b00};
+  reg [7:0] pending_auth_request_temp = {2'b01,2'b10,2'b00,2'b11};
   assign pending_auth_request = pending_auth_request_temp;
 
   reg reset = 1;
