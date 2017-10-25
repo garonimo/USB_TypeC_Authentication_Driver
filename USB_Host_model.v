@@ -69,14 +69,14 @@ module PD_DEBUG_Driver_model
   initial begin
     # 95  CC1 = 1;
     # 200  CC1 = 0;
-    # 250 $finish;
+    # 350 $finish;
   end
 
   reg CC2 = 1;
   initial begin
     # 100  CC2 = 0;
     # 200  CC2 = 1;
-    # 250 $finish;
+    # 350 $finish;
   end
 
 
