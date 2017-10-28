@@ -35,6 +35,7 @@ module certificate_control
 
   //--------------------------------Variables-----------------------------------
   wire [7:0] counter;
+  reg counter_enable = 1;
   reg [7:0] counter_temp = 0;
   reg Error_Invalid_Cert_temp;
   wire [7:0] expected_certificates;
@@ -174,13 +175,20 @@ module certificate_control
 
         CREATE_CERTIFICATE_MSG:
         begin
+          pending_authentication_temp <= 1'b1;
           Ack_out_temp <= 1'b0;
-          counter_temp  <= counter_temp + 1;
           Cert_Generator_enable_temp <= 1'b1;
+          if (counter_enable) begin
+            counter_temp  <= counter_temp + 1;
+            counter_enable  <= 1'b0;
+          end else begin
+            counter_temp  <= counter_temp;
+          end
         end
 
         ACK:
         begin
+          counter_enable  <= 1'b1;
           Cert_Generator_enable_temp <= 1'b0;
           Ack_out_temp <= 1'b1;
         end
