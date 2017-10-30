@@ -36,7 +36,7 @@ module get_certificate_answer
 
   always @ (posedge clk) begin
     if (Enable) begin
-      Payload_in = auth_msg_resp_in[2055:0];
+      Payload_in = auth_msg_resp_in[2047:0];
       offset = auth_msg_resp_in[`MSG_LEN-1-(4*`SIZE_OF_HEADER_VARS):`MSG_LEN-(6*`SIZE_OF_HEADER_VARS)];
       length = auth_msg_resp_in[`MSG_LEN-1-(6*`SIZE_OF_HEADER_VARS):`MSG_LEN-(8*`SIZE_OF_HEADER_VARS)];
 
@@ -58,7 +58,7 @@ module get_certificate_answer
                 end
               end //case 0
 
-              1:
+              `SLOT0_CERT1_LENGTH:
               begin
                 if (length == `SLOT0_CERT2_LENGTH) begin
                   payload_temp <= `SLOT0_CERT2;
@@ -67,7 +67,7 @@ module get_certificate_answer
                 end
               end //case 1
 
-              2:
+              (`SLOT0_CERT1_LENGTH+`SLOT0_CERT2_LENGTH):
               begin
                 if (length == `SLOT0_CERT3_LENGTH) begin
                   payload_temp <= `SLOT0_CERT3;
@@ -76,7 +76,7 @@ module get_certificate_answer
                 end
               end //case 2
 
-              3:
+              (`SLOT0_CERT1_LENGTH+`SLOT0_CERT2_LENGTH+`SLOT0_CERT3_LENGTH):
               begin
                 if (length == `SLOT0_CERT4_LENGTH) begin
                   payload_temp <= `SLOT0_CERT4;
@@ -85,7 +85,7 @@ module get_certificate_answer
                 end
               end //case 3
 
-              4:
+              (`SLOT0_CERT1_LENGTH+`SLOT0_CERT2_LENGTH+`SLOT0_CERT3_LENGTH+`SLOT0_CERT4_LENGTH):
               begin
                 if (length == `SLOT0_CERT5_LENGTH) begin
                   payload_temp <= `SLOT0_CERT5;
@@ -94,7 +94,7 @@ module get_certificate_answer
                 end
               end //case 4
 
-              5:
+              (`SLOT0_CERT1_LENGTH+`SLOT0_CERT2_LENGTH+`SLOT0_CERT3_LENGTH+`SLOT0_CERT4_LENGTH+`SLOT0_CERT5_LENGTH):
               begin
                 if (length == `SLOT0_CERT6_LENGTH) begin
                   payload_temp <= `SLOT0_CERT6;
@@ -122,7 +122,7 @@ module get_certificate_answer
                 end
               end //case 0
 
-              1:
+              `SLOT1_CERT1_LENGTH:
               begin
                 if (length == `SLOT1_CERT2_LENGTH) begin
                   payload_temp <= `SLOT1_CERT2;
@@ -131,7 +131,7 @@ module get_certificate_answer
                 end
               end //case 1
 
-              2:
+              (`SLOT1_CERT1_LENGTH+`SLOT1_CERT2_LENGTH):
               begin
                 if (length == `SLOT1_CERT3_LENGTH) begin
                   payload_temp <= `SLOT1_CERT3;
@@ -140,7 +140,7 @@ module get_certificate_answer
                 end
               end //case 2
 
-              3:
+              (`SLOT1_CERT1_LENGTH+`SLOT1_CERT2_LENGTH+`SLOT1_CERT3_LENGTH):
               begin
                 if (length == `SLOT1_CERT4_LENGTH) begin
                   payload_temp <= `SLOT1_CERT4;
@@ -167,7 +167,7 @@ module get_certificate_answer
                 end
               end //case 0
 
-              1:
+              `SLOT2_CERT1_LENGTH:
               begin
                 if (length == `SLOT2_CERT2_LENGTH) begin
                   payload_temp <= `SLOT2_CERT2;
@@ -176,7 +176,7 @@ module get_certificate_answer
                 end
               end //case 1
 
-              2:
+              (`SLOT2_CERT1_LENGTH+`SLOT2_CERT2_LENGTH):
               begin
                 if (length == `SLOT2_CERT3_LENGTH) begin
                   payload_temp <= `SLOT2_CERT3;
@@ -185,7 +185,7 @@ module get_certificate_answer
                 end
               end //case 2
 
-              3:
+              (`SLOT2_CERT1_LENGTH+`SLOT2_CERT2_LENGTH+`SLOT2_CERT3_LENGTH):
               begin
                 if (length == `SLOT2_CERT2_LENGTH) begin
                   payload_temp <= `SLOT2_CERT4;
@@ -194,7 +194,7 @@ module get_certificate_answer
                 end
               end //case 3
 
-              4:
+              (`SLOT2_CERT1_LENGTH+`SLOT0_CERT2_LENGTH+`SLOT2_CERT3_LENGTH+`SLOT2_CERT4_LENGTH):
               begin
                 if (length == `SLOT2_CERT5_LENGTH) begin
                   payload_temp <= `SLOT2_CERT5;

@@ -26,10 +26,12 @@ wire RX1_p,RX1_m,SBU2,D2_m,D2_p,CC2,TX2_m,TX2_p,clk,reset;
 wire resp_req_in,resp_req_out,Ack_out_resp,Ack_in;
 wire PD_in_ready, DEBUG_in_ready, auth_msg_ready;
 wire [`MSG_LEN-1:0] auth_msg_out, auth_msg_in;
-wire [7:0] pending_auth_request;
+wire [7:0] pending_auth_request_PD;
+wire [7:0] pending_auth_request_DEBUG;
 wire [7:0] bmRequestType;
 wire [7:0] bRequest;
 wire [15:0] wLength;
+wire pending_auth_request_DEBUG_erase, pending_auth_request_PD_erase;
 
 
 PD_DEBUG_Driver_model In_generator
@@ -42,7 +44,10 @@ PD_DEBUG_Driver_model In_generator
     .PD_in_ready(PD_in_ready),
     .DEBUG_in_ready(DEBUG_in_ready),
     .Ack_in_driver(Ack_in),
-    .pending_auth_request(pending_auth_request),
+    .pending_auth_request_PD(pending_auth_request_PD),
+    .pending_auth_request_DEBUG(pending_auth_request_DEBUG),
+    .pending_auth_request_DEBUG_erase(pending_auth_request_DEBUG_erase),
+    .pending_auth_request_PD_erase(pending_auth_request_PD_erase),
     .resp_req_in(resp_req_in),
     .auth_msg_in(auth_msg_in),
     .auth_msg_out(auth_msg_out),
@@ -56,7 +61,10 @@ authentication_driver My_authentication_driver
     .reset(reset),
     .auth_msg_in(auth_msg_in),
     .Ack_in(Ack_in),
-    .pending_auth_request(pending_auth_request),
+    .pending_auth_request_PD(pending_auth_request_PD),
+    .pending_auth_request_DEBUG(pending_auth_request_DEBUG),
+    .pending_auth_request_DEBUG_erase(pending_auth_request_DEBUG_erase),
+    .pending_auth_request_PD_erase(pending_auth_request_PD_erase),
     .PD_in_ready(PD_in_ready),
     .DEBUG_in_ready(DEBUG_in_ready),
     .auth_msg_ready(auth_msg_ready),

@@ -25,6 +25,7 @@ module initiator
     output wire [31:0] current_timeout,
     output wire pending_auth_msg_to_send,
     output wire Certification_done,
+    output wire Error_authentication_failed,
     output wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload,
     output wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header
   );
@@ -43,7 +44,6 @@ module initiator
   reg Error_Unspecified_temp = 0;
   reg Error_MSG_ready = 0;
 
-  wire Error_Invalid_Cert;
   reg [31:0] current_timeout_temp = `CHALLENGE_TIMEOUT_AUTH;
   //Variables del mensaje de autenticacion
   reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
@@ -86,7 +86,7 @@ module initiator
       .Ack_out(Ack_in_GetCert),
       .pending_authentication(pending_auth_msg_to_send),
       .Certification_done(Certification_done),
-      .Error_Invalid_Cert(Error_Invalid_Cert)
+      .Certification_failed(Error_authentication_failed)
     );
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -188,7 +188,7 @@ module initiator
 
   //---------------------------Lógica secuencial---------------------------------
   always @ (posedge clk) begin : INITIATOR_SEQ
-    if ((reset == 1'b1) || (Error_Invalid_Cert == 1'b1)) begin
+    if ((reset == 1'b1) || (Error_authentication_failed == 1'b1)) begin
         state <= IDLE;
       end
     else begin

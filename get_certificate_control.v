@@ -24,28 +24,30 @@ module certificate_control
     output wire Ack_out,
     output wire pending_authentication,
     output wire Certification_done,
-    output wire Error_Invalid_Cert
+    output wire Certification_failed
   );
 
   //-------------------------------Parámetros-----------------------------------
   parameter IDLE = 9'b000000001, CREATE_CERTIFICATE_MSG = 9'b000000010;
   parameter WAIT_CERTIFICATE_RESPONSE = 9'b00001000;
   parameter ACK = 9'b000000100, NUMB_OF_CERTIFICATES = 9'b000010000;
-  parameter END  = 9'b000100000, ERROR = 9'b001000000;
+  parameter END  = 9'b000100000;
 
   //--------------------------------Variables-----------------------------------
   wire [7:0] counter;
   reg counter_enable = 1;
   reg [7:0] counter_temp = 0;
-  reg Error_Invalid_Cert_temp;
+  reg Error_authentication_failed = 0;
   wire [7:0] expected_certificates;
   //Handshakes
   reg Ack_out_temp;
   wire Cert_Generator_enable;
   wire Ack_in_Cert_Generator;
+  wire Ack_out_GetCert;
+  reg Ack_out_GetCert_temp;
   reg Cert_Generator_enable_temp;
   reg pending_authentication_temp;
-  reg Certification_done_temp;
+  reg Certification_done_temp, Certification_failed_temp;
   reg Valid_Certificate = 1;
   //Variables de estado
   reg [`SIZE_OF_STATES_INIT-1:0] state, next_state;
@@ -61,6 +63,7 @@ module certificate_control
       .Enable(Cert_Generator_enable),
       .slot(slot),
       .counter(counter),
+      .Ack_in(Ack_out_GetCert),
       .header(header),
       .payload(payload),
       .expected_certificates(expected_certificates),
@@ -116,9 +119,10 @@ module certificate_control
           if (Valid_Certificate) begin
             next_state = NUMB_OF_CERTIFICATES;
           end else begin
-            next_state = ERROR;
+            next_state = END;
           end
-        end else begin
+        end // if (Enable == 1'b1) && (Ack_in == 1'b0)
+        else begin
           next_state = WAIT_CERTIFICATE_RESPONSE;
         end
       end //WAIT_CERTIFICATE_RESPONSE
@@ -152,7 +156,10 @@ module certificate_control
   always @ (posedge clk) begin : GET_CERT_SEQ
     if (reset == 1'b1) begin
         state <= IDLE;
-      end
+    end
+    else if (Error_authentication_failed) begin
+        state <= END;
+    end
     else begin
         state <= next_state;
       end
@@ -188,6 +195,7 @@ module certificate_control
 
         ACK:
         begin
+          Ack_out_GetCert_temp <= 1'b1;
           counter_enable  <= 1'b1;
           Cert_Generator_enable_temp <= 1'b0;
           Ack_out_temp <= 1'b1;
@@ -198,10 +206,21 @@ module certificate_control
           Ack_out_temp <= 1'b0;
         end
 
+        NUMB_OF_CERTIFICATES:
+        begin
+          Ack_out_GetCert_temp <= 1'b0;
+        end
+
         END:
         begin
+          Ack_out_GetCert_temp <= 1'b0;
+          if (!Error_authentication_failed) begin
+            Certification_done_temp <=  1'b1;
+          end else begin
+            Certification_failed_temp <= 1'b1;
+            Error_authentication_failed <= 0;
+          end
           pending_authentication_temp <= 1'b0;
-          Certification_done_temp <=  1'b1;
         end
 
         default: Ack_out_temp <= 1'b0;
@@ -212,11 +231,12 @@ module certificate_control
 
   //---------------------------Fin de FSM---------------------------------------
 
-  assign Error_Invalid_Cert = Error_Invalid_Cert_temp;
   assign Ack_out = Ack_out_temp;
   assign Cert_Generator_enable = Cert_Generator_enable_temp;
   assign pending_authentication = pending_authentication_temp;
   assign Certification_done = Certification_done_temp;
   assign counter = counter_temp;
+  assign Certification_failed = Certification_failed_temp;
+  assign Ack_out_GetCert = Ack_out_GetCert_temp;
 
 endmodule // certificate_control

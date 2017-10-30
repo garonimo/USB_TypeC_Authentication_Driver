@@ -17,6 +17,7 @@ module Get_Cert_generator
     input wire Enable,
     input wire [1:0] slot,
     input wire [7:0] counter,
+    input wire Ack_in,
     output wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header,
     output wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload,
     output wire [7:0] expected_certificates,
@@ -27,6 +28,7 @@ module Get_Cert_generator
 
   reg [7:0] expected_certificates_temp;
   reg [15:0] offset_counter;
+  reg offset_counter_enable = 1;
   reg Ack_out_temp;
   reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
   reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
@@ -34,6 +36,11 @@ module Get_Cert_generator
 //------------------------------------------------------------------------------
 
   always @ (posedge clk) begin
+    if (Ack_in == 1'b1) begin
+      offset_counter_enable = 1;
+    end else begin
+      offset_counter_enable = offset_counter_enable;
+    end
     if (Enable == 1'b1) begin
       case(slot)
 
@@ -46,37 +53,62 @@ module Get_Cert_generator
             1:
             begin
               offset_counter = 16'h0000;
-              payload_temp = {offset_counter,`SLOT0_CERT1_LENGTH,2024'h0};
+              payload_temp = {offset_counter,`SLOT0_CERT1_LENGTH,2016'h0};
             end
 
             2:
             begin
-              offset_counter += `SLOT0_CERT1_LENGTH;
-              payload_temp = {offset_counter,`SLOT0_CERT2_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT0_CERT1_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT0_CERT2_LENGTH,2016'h0};
             end
 
             3:
             begin
-              offset_counter += `SLOT0_CERT2_LENGTH;
-              payload_temp = {offset_counter,`SLOT0_CERT3_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT0_CERT2_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT0_CERT3_LENGTH,2016'h0};
             end
 
             4:
             begin
-              offset_counter += `SLOT0_CERT3_LENGTH;
-              payload_temp = {offset_counter,`SLOT0_CERT4_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT0_CERT3_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT0_CERT4_LENGTH,2016'h0};
             end
 
             5:
             begin
-              offset_counter += `SLOT0_CERT4_LENGTH;
-              payload_temp = {offset_counter,`SLOT0_CERT5_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT0_CERT4_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT0_CERT5_LENGTH,2016'h0};
             end
 
             6:
             begin
-              offset_counter += `SLOT0_CERT5_LENGTH;
-              payload_temp = {offset_counter,`SLOT0_CERT6_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT0_CERT5_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT0_CERT6_LENGTH,2016'h0};
             end
 
             default: Ack_out_temp <= 0;
@@ -94,25 +126,40 @@ module Get_Cert_generator
             1:
             begin
               offset_counter = 16'h0000;
-              payload_temp = {offset_counter,`SLOT1_CERT1_LENGTH,2024'h0};
+              payload_temp = {offset_counter,`SLOT1_CERT1_LENGTH,2016'h0};
             end
 
             2:
             begin
-              offset_counter += `SLOT1_CERT1_LENGTH;
-              payload_temp = {offset_counter,`SLOT1_CERT2_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT1_CERT1_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT1_CERT2_LENGTH,2016'h0};
             end
 
             3:
             begin
-              offset_counter += `SLOT1_CERT2_LENGTH;
-              payload_temp = {offset_counter,`SLOT1_CERT3_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT1_CERT2_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT1_CERT3_LENGTH,2016'h0};
             end
 
             4:
             begin
-              offset_counter += `SLOT1_CERT3_LENGTH;
-              payload_temp = {offset_counter,`SLOT1_CERT4_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT1_CERT3_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT1_CERT4_LENGTH,2016'h0};
             end
 
             default: Ack_out_temp <= 0;
@@ -130,51 +177,71 @@ module Get_Cert_generator
             1:
             begin
               offset_counter = 16'h0000;
-              payload_temp = {offset_counter,`SLOT2_CERT1_LENGTH,2024'h0};
+              payload_temp = {offset_counter,`SLOT2_CERT1_LENGTH,2016'h0};
             end
 
             2:
             begin
-              offset_counter += `SLOT2_CERT1_LENGTH;
-              payload_temp = {offset_counter,`SLOT2_CERT2_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT2_CERT1_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT2_CERT2_LENGTH,2016'h0};
             end
 
             3:
             begin
-              offset_counter += `SLOT2_CERT2_LENGTH;
-              payload_temp = {offset_counter,`SLOT2_CERT3_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT2_CERT2_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT2_CERT3_LENGTH,2016'h0};
             end
 
             4:
             begin
-              offset_counter +=  `SLOT2_CERT3_LENGTH;
-              payload_temp = {offset_counter,`SLOT2_CERT4_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT2_CERT3_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT2_CERT4_LENGTH,2016'h0};
             end
 
             5:
             begin
-              offset_counter += `SLOT2_CERT4_LENGTH;
-              payload_temp = {offset_counter,`SLOT2_CERT5_LENGTH,2024'h0};
+              if (offset_counter_enable) begin
+                offset_counter += `SLOT2_CERT4_LENGTH;
+                offset_counter_enable = 0;
+              end else begin
+                offset_counter = offset_counter;
+              end
+              payload_temp = {offset_counter,`SLOT2_CERT5_LENGTH,2016'h0};
             end
-
 
             default: Ack_out_temp <= 0;
           endcase
         end //SLOT2
 //------------------------------------------------------------------------------
 
-      default: Ack_out_temp <= 0;
+        default: Ack_out_temp <= 0;
 
       endcase // slot
 
       Ack_out_temp <= 1'b1;
-    end else begin
+    end  // if (Enable == 1'b1)
+    else begin
       Ack_out_temp <= 0;
       header_temp <= 0;
       payload_temp <= 0;
       offset_counter <= offset_counter;
     end
-  end
+  end //Always
 
 
   assign expected_certificates = expected_certificates_temp;
