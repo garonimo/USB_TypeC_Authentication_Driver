@@ -52,6 +52,6 @@ simulate: $(COUTPUT)
 	$(SIMULATOR) $(SFLAGS) $(COUTPUT) $(SOUTPUT)
 
 compile_test:
-	@iverilog -o prueba $(TEST_FILE)
+	@$(COMPILER) -o prueba $(TEST_FILE)
 	@echo "Test file(s): $(TEST_FILE) compiled succesfully"
 	@rm prueba

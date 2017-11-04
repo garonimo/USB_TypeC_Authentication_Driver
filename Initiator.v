@@ -216,6 +216,7 @@ module initiator
           Ack_out_GetCert_temp <= 1'b0;
           header_temp <= 0;
           payload_temp <= 0;
+          GetCert_enable_temp <= 1'b0;
         end
 
         CHALLENGE:

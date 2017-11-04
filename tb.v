@@ -20,9 +20,8 @@ initial begin
   $dumpvars(0,test);
 end
 
-//Pins del receptáculo del type-C
-wire TX1_p,TX1_m,VBUS,CC1,D1_p,D1_m,SBU1,RX2_m,RX2_p;
-wire RX1_p,RX1_m,SBU2,D2_m,D2_p,CC2,TX2_m,TX2_p,clk,reset;
+
+wire reset;
 wire resp_req_in,resp_req_out,Ack_out_resp,Ack_in;
 wire PD_ready, DEBUG_ready, auth_msg_ready;
 wire PD_msg_ready, DEBUG_msg_ready;
@@ -37,10 +36,6 @@ wire pending_auth_request_DEBUG_erase, pending_auth_request_PD_erase;
 
 PD_DEBUG_Driver_model In_generator
   (
-    .CC1(CC1),
-    .CC2(CC2),
-    .TX2_m(TX2_m),
-    .TX2_p(TX2_p),
     .reset(reset),
     .PD_ready(PD_ready),
     .DEBUG_ready(DEBUG_ready),

@@ -9,7 +9,6 @@
 * certificados.
 */
 
-`include "Parameters.v"
 
 module certificate_control
   (
@@ -126,7 +125,8 @@ module certificate_control
       begin
         if (Ack_in == 1'b1) begin
           next_state = WAIT_CERTIFICATE_RESPONSE;
-        end else begin
+        end
+        else begin
           next_state = ACK;
         end
       end //ACK
@@ -162,7 +162,10 @@ module certificate_control
 
       END:
       begin
-        if (pending_authentication == 1'b0) begin
+        if (Certification_failed) begin
+          next_state <= IDLE;
+        end 
+        else if (pending_authentication == 1'b0) begin
           next_state <= IDLE;
         end else begin
           next_state <= END;
@@ -203,6 +206,7 @@ module certificate_control
           Ack_out_temp <= 1'b0;
         end
 
+
         CREATE_CERTIFICATE_MSG:
         begin
           certificate_compare_enable_temp <= 1'b0;
@@ -217,6 +221,7 @@ module certificate_control
           end
         end
 
+
         ACK:
         begin
           Ack_out_GetCert_temp <= 1'b1;
@@ -224,6 +229,7 @@ module certificate_control
           Cert_Generator_enable_temp <= 1'b0;
           Ack_out_temp <= 1'b1;
         end
+
 
         WAIT_CERTIFICATE_RESPONSE:
         begin
@@ -240,10 +246,12 @@ module certificate_control
           end
         end //WAIT_CERTIFICATE_RESPONSE
 
+
         NUMB_OF_CERTIFICATES:
         begin
           Ack_out_GetCert_temp <= 1'b0;
         end
+
 
         END:
         begin
