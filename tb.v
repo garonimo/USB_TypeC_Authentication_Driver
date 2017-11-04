@@ -24,7 +24,8 @@ end
 wire TX1_p,TX1_m,VBUS,CC1,D1_p,D1_m,SBU1,RX2_m,RX2_p;
 wire RX1_p,RX1_m,SBU2,D2_m,D2_p,CC2,TX2_m,TX2_p,clk,reset;
 wire resp_req_in,resp_req_out,Ack_out_resp,Ack_in;
-wire PD_in_ready, DEBUG_in_ready, auth_msg_ready;
+wire PD_ready, DEBUG_ready, auth_msg_ready;
+wire PD_msg_ready, DEBUG_msg_ready;
 wire [`MSG_LEN-1:0] auth_msg_out, auth_msg_in;
 wire [7:0] pending_auth_request_PD;
 wire [7:0] pending_auth_request_DEBUG;
@@ -41,8 +42,10 @@ PD_DEBUG_Driver_model In_generator
     .TX2_m(TX2_m),
     .TX2_p(TX2_p),
     .reset(reset),
-    .PD_in_ready(PD_in_ready),
-    .DEBUG_in_ready(DEBUG_in_ready),
+    .PD_ready(PD_ready),
+    .DEBUG_ready(DEBUG_ready),
+    .PD_msg_ready(PD_msg_ready),
+    .DEBUG_msg_ready(DEBUG_msg_ready),
     .Ack_in_driver(Ack_in),
     .pending_auth_request_PD(pending_auth_request_PD),
     .pending_auth_request_DEBUG(pending_auth_request_DEBUG),
@@ -65,8 +68,10 @@ authentication_driver My_authentication_driver
     .pending_auth_request_DEBUG(pending_auth_request_DEBUG),
     .pending_auth_request_DEBUG_erase(pending_auth_request_DEBUG_erase),
     .pending_auth_request_PD_erase(pending_auth_request_PD_erase),
-    .PD_in_ready(PD_in_ready),
-    .DEBUG_in_ready(DEBUG_in_ready),
+    .PD_out_ready(PD_ready),
+    .DEBUG_out_ready(DEBUG_ready),
+    .PD_msg_ready(PD_msg_ready),
+    .DEBUG_msg_ready(DEBUG_msg_ready),
     .auth_msg_ready(auth_msg_ready),
     .auth_msg_out(auth_msg_out)
   );

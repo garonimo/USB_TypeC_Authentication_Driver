@@ -5,7 +5,9 @@
 *
 *	Autor: Andrés Sánchez López - B26214
 *
-*	Descripción: Este archivo es el authentication initiator
+*	Descripción: Este archivo es el authentication initiator, crea los mensajes
+* de autenticación y recibe los certificados solicitados para verificar que
+* estos son correctos
 */
 
 
@@ -18,6 +20,7 @@ module initiator
     input wire Ack_in,
     input wire [1:0] type_of_request,
     input wire [1:0] slot,
+    input wire Error_Busy,
     output wire Ack_out,
     output wire [7:0] bmRequestType,
     output wire [7:0] bRequest,
@@ -188,7 +191,7 @@ module initiator
 
   //---------------------------Lógica secuencial---------------------------------
   always @ (posedge clk) begin : INITIATOR_SEQ
-    if ((reset == 1'b1) || (Error_authentication_failed == 1'b1)) begin
+    if ((reset == 1'b1) || (Error_authentication_failed == 1'b1) || (Error_Busy)) begin
         state <= IDLE;
       end
     else begin

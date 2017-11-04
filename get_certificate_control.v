@@ -39,8 +39,14 @@ module certificate_control
   reg [7:0] counter_temp = 0;
   reg Error_authentication_failed = 0;
   wire [7:0] expected_certificates;
+  wire Error_Invalid_Certificate;
+  wire Valid_Certificate;
+  wire [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] Payload_Compare;
+  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] Payload_Compare_temp;
   //Handshakes
   reg Ack_out_temp;
+  wire certificate_compare_enable;
+  reg certificate_compare_enable_temp;
   wire Cert_Generator_enable;
   wire Ack_in_Cert_Generator;
   wire Ack_out_GetCert;
@@ -48,7 +54,9 @@ module certificate_control
   reg Cert_Generator_enable_temp;
   reg pending_authentication_temp;
   reg Certification_done_temp, Certification_failed_temp;
-  reg Valid_Certificate = 1;
+  reg Valid_header;
+  //Variables internas
+  reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in;
   //Variables de estado
   reg [`SIZE_OF_STATES_INIT-1:0] state, next_state;
 
@@ -69,6 +77,19 @@ module certificate_control
       .expected_certificates(expected_certificates),
       .Ack_out(Ack_in_Cert_Generator)
     );
+
+    certificate_compare comparison_of_certificates
+    (
+      .clk(clk),
+      .Reset(reset),
+      .Enable(certificate_compare_enable),
+      .slot(slot),
+      .counter(counter),
+      .Payload_in(Payload_Compare),
+      .Error_Invalid_Certificate(Error_Invalid_Certificate),
+      .Valid_Certificate(Valid_Certificate)
+    );
+
 
   ////////////////////////////////////////////////////////////////////////////////
   //-------------------------Máquina de estados-----------------------------------
@@ -113,15 +134,16 @@ module certificate_control
 
       WAIT_CERTIFICATE_RESPONSE:
       begin
-        if ((Enable == 1'b1) && (Ack_in == 1'b0)) begin
-          //Aqui se determina si el certificado es valido o no, pero esto se
-          //hace en alto nivel
-          if (Valid_Certificate) begin
+        ProtocolVersion_in = auth_msg_init_in[`MSG_LEN-1:`MSG_LEN-(`SIZE_OF_HEADER_VARS)];
+        MessageType_in = auth_msg_init_in[`MSG_LEN-1-(`SIZE_OF_HEADER_VARS):`MSG_LEN-(2*`SIZE_OF_HEADER_VARS)];
+        Payload_Compare_temp = auth_msg_init_in[2048:0];
+        if ((Valid_Certificate) || (Error_Invalid_Certificate)) begin
+          if ((Valid_header) && (Valid_Certificate)) begin
             next_state = NUMB_OF_CERTIFICATES;
           end else begin
             next_state = END;
           end
-        end // if (Enable == 1'b1) && (Ack_in == 1'b0)
+        end //if ((Valid_Certificate) || (Error_Invalid_Certificate))
         else begin
           next_state = WAIT_CERTIFICATE_RESPONSE;
         end
@@ -176,12 +198,14 @@ module certificate_control
 
         IDLE:
         begin
+          certificate_compare_enable_temp <= 1'b0;
           counter_temp <= 0;
           Ack_out_temp <= 1'b0;
         end
 
         CREATE_CERTIFICATE_MSG:
         begin
+          certificate_compare_enable_temp <= 1'b0;
           pending_authentication_temp <= 1'b1;
           Ack_out_temp <= 1'b0;
           Cert_Generator_enable_temp <= 1'b1;
@@ -204,7 +228,17 @@ module certificate_control
         WAIT_CERTIFICATE_RESPONSE:
         begin
           Ack_out_temp <= 1'b0;
-        end
+          if ((ProtocolVersion_in == 8'h01) && (MessageType_in == 8'h82)) begin
+            Valid_header = 1'b1;
+          end else begin
+            Valid_header = 1'b0;
+          end
+          if ((Enable == 1'b1) && (Ack_in == 1'b0) && (auth_msg_init_in))  begin
+            certificate_compare_enable_temp = 1'b1;
+          end else begin
+            certificate_compare_enable_temp = 1'b0;
+          end
+        end //WAIT_CERTIFICATE_RESPONSE
 
         NUMB_OF_CERTIFICATES:
         begin
@@ -214,7 +248,7 @@ module certificate_control
         END:
         begin
           Ack_out_GetCert_temp <= 1'b0;
-          if (!Error_authentication_failed) begin
+          if ((!Error_authentication_failed) && (!Error_Invalid_Certificate)) begin
             Certification_done_temp <=  1'b1;
           end else begin
             Certification_failed_temp <= 1'b1;
@@ -238,5 +272,7 @@ module certificate_control
   assign counter = counter_temp;
   assign Certification_failed = Certification_failed_temp;
   assign Ack_out_GetCert = Ack_out_GetCert_temp;
+  assign certificate_compare_enable = certificate_compare_enable_temp;
+  assign Payload_Compare = Payload_Compare_temp;
 
 endmodule // certificate_control

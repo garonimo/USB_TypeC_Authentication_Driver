@@ -8,6 +8,7 @@
 *	Descripción: Este archivo es para crear el mensaje de respuesta a un CHALLENGE
 */
 
+`include "Parameters.v"
 
 module challenge_answer
   (

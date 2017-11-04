@@ -5,7 +5,8 @@
 *
 *	Autor: Andrés Sánchez López - B26214
 *
-*	Descripción: Este archivo es el authentication responder
+*	Descripción: Este archivo es el authentication responder, responde a los
+* mensajes de autenticación en base a lo que se tiene en la entrada
 */
 
 
@@ -17,6 +18,7 @@ module responder
     input wire [`MSG_LEN-1:0] auth_msg_resp_in,
     input wire Ack_in,
     input wire [1:0] slot,
+    input wire Error_Busy,
     output wire resp_req_out,
     output wire [7:0] bmRequestType,
     output wire [7:0] bRequest,
@@ -35,13 +37,12 @@ module responder
 
   //--------------------------------Variables-----------------------------------
   //Variables inicializadas
-  reg Error_Busy_temp = 0;
   reg Error_Unsupported_Protocol_temp = 0;
   reg Error_Invalid_Request_temp = 0;
   reg Error_Unspecified_temp = 0;
   integer resp_timeout_counter = 0;
   //Variables de error
-  wire Error_Invalid_Request,Error_Unspecified,Error_Busy,Error_Unsupported_Protocol;
+  wire Error_Invalid_Request,Error_Unspecified,Error_Unsupported_Protocol;
   wire Error_Invalid_Request_challenge,Error_Invalid_Request_GetCertificate;
   reg [31:0] current_timeout_temp = `CHALLENGE_TIMEOUT_AUTH;
   //Variables del mensaje de autenticacion
@@ -234,7 +235,7 @@ module responder
    if (reset == 1'b1) begin
      state <= IDLE;
    end
-   else if ((Error_Busy_temp | Error_Unsupported_Protocol_temp | Error_Invalid_Request | Error_Unspecified) && (state != GEN_ERROR)) begin
+   else if ((Error_Busy | Error_Unsupported_Protocol_temp | Error_Invalid_Request | Error_Unspecified) && (state != GEN_ERROR)) begin
      state <= GEN_ERROR;
    end
    else begin
@@ -303,7 +304,6 @@ module responder
          begin
           //Primero se borran algunas variables que pudieron quedar en uno
            error_response_enable_temp <= 1'b0;
-           Error_Busy_temp <= 1'b0;
            Error_Unsupported_Protocol_temp <= 1'b0;
            Error_Invalid_Request_temp <= 1'b0;
            challenge_enable_temp <= 1'b0;
@@ -328,7 +328,6 @@ module responder
 //-------------------------------End of always code-----------------------------
 
  assign resp_req_out = resp_req_out_temp;
- assign Error_Busy = Error_Busy_temp;
  assign Error_Unsupported_Protocol = Error_Unsupported_Protocol_temp;
  assign Error_Invalid_Request = Error_Invalid_Request_temp;
  assign Error_Unspecified = Error_Unspecified_temp;

@@ -5,7 +5,8 @@
 *
 *	Autor: Andrés Sánchez López - B26214
 *
-*	Descripción: Este archivo contiene
+*	Descripción: Este archivo es la máquina de estados principal de todo el diseño
+* aqui se instancian los otros módulos más importantes
 */
 
 
@@ -17,10 +18,12 @@ module authentication_driver
     input wire Ack_in,
     input wire [7:0] pending_auth_request_PD,
     input wire [7:0] pending_auth_request_DEBUG,
+    input wire PD_msg_ready,
+    input wire DEBUG_msg_ready,
     output wire pending_auth_request_PD_erase,
     output wire pending_auth_request_DEBUG_erase,
-    output wire PD_in_ready,
-    output wire DEBUG_in_ready,
+    output wire PD_out_ready,
+    output wire DEBUG_out_ready,
     output wire auth_msg_ready,
     output wire Error_authentication_failed,
     output wire [`MSG_LEN-1:0] auth_msg_out
@@ -49,7 +52,7 @@ module authentication_driver
   reg [1:0] slot_temp;
   reg  Responder_Enable_temp, Initiator_Enable_temp;
   reg auth_msg_ready_temp;
-  reg PD_in_ready_temp,DEBUG_in_ready_temp;
+  reg PD_out_ready_temp,DEBUG_out_ready_temp;
   reg [7:0] auth_msg_resp_out_temp;
   reg pending_auth_request_PD_erase_temp = 0;
   reg pending_auth_request_DEBUG_erase_temp = 0;
@@ -281,19 +284,19 @@ module authentication_driver
           counter += 1;
           Ack_out_resp_temp <= 1'b0;
           auth_msg_out_temp <= 1'b0;
-          PD_in_ready_temp <= 1'b0;
-          DEBUG_in_ready_temp <= 1'b0;
+          PD_out_ready_temp <= 1'b0;
+          DEBUG_out_ready_temp <= 1'b0;
           auth_msg_ready_temp <= 1'b0;
         end
 
         GET_DATA_OF_REQUESTER_PD:
         begin
-          PD_in_ready_temp <= 1'b1;
+          PD_out_ready_temp <= 1'b1;
         end
 
         GET_DATA_OF_REQUESTER_DEBUG:
         begin
-          DEBUG_in_ready_temp <= 1'b1;
+          DEBUG_out_ready_temp <= 1'b1;
         end
 
         GET_REQUESTER_MSG:
@@ -327,6 +330,8 @@ module authentication_driver
 
         SEND_MSG:
         begin
+          PD_out_ready_temp <= 1'b0;
+          DEBUG_out_ready_temp <= 1'b0;
           Ack_out_init_temp <= 1'b1;
           Ack_out_resp_temp <= 1'b1;
           Responder_Enable_temp <= 1'b0;
@@ -347,8 +352,8 @@ module authentication_driver
 
         default: begin
           auth_msg_out_temp <= 1'b0;
-          PD_in_ready_temp <= 1'b0;
-          DEBUG_in_ready_temp <= 1'b0;
+          PD_out_ready_temp <= 1'b0;
+          DEBUG_out_ready_temp <= 1'b0;
           auth_msg_ready_temp <= 1'b0;
         end
 
@@ -361,8 +366,8 @@ assign Responder_Enable = Responder_Enable_temp;
 assign Initiator_Enable = Initiator_Enable_temp;
 assign auth_msg_ready = auth_msg_ready_temp;
 assign auth_msg_out = auth_msg_out_temp;
-assign PD_in_ready = PD_in_ready_temp;
-assign DEBUG_in_ready = DEBUG_in_ready_temp;
+assign PD_out_ready = PD_out_ready_temp;
+assign DEBUG_out_ready = DEBUG_out_ready_temp;
 assign Ack_out_resp = Ack_out_resp_temp;
 assign type_of_request = type_of_request_temp;
 assign bmRequestType = bmRequestType_temp;
