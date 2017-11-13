@@ -8,7 +8,6 @@
 *	Descripción: Este archivo es para crear el mensaje de respuesta a un CHALLENGE
 */
 
-`include "Parameters.v"
 
 module challenge_answer
   (
@@ -22,15 +21,15 @@ module challenge_answer
     output wire [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] payload
   );
 
-  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
-  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
-  reg Ack_out_temp;
+  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp = 0;
+  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp = 0;
+  reg Ack_out_temp = 0;
   reg Error_Invalid_Request_temp = 0;
-  reg [231:0] Payload_in;
+  reg [231:0] Payload_in = 0;
 
 
   always @ (posedge clk) begin
-    if (Enable) begin
+    if (Enable == 1'b1) begin
       Payload_in = auth_msg_resp_in[255:24];
       if (Payload_in > 0) begin
         Error_Invalid_Request_temp = 1'b0;
@@ -39,6 +38,9 @@ module challenge_answer
         Ack_out_temp = 1'b1;
       end else begin
         Error_Invalid_Request_temp = 1'b1;
+        header_temp = 0;
+        payload_temp = 0;
+        Ack_out_temp = 1'b0;
       end
     end //If Enable
     else begin

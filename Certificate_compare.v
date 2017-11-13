@@ -24,7 +24,8 @@ module certificate_compare
 
   parameter SLOT0 = 2'b00, SLOT1 = 2'b01, SLOT2 = 2'b10;
 
-  reg Error_Invalid_Certificate_temp, Valid_Certificate_temp;
+  reg Error_Invalid_Certificate_temp = 0;
+  reg Valid_Certificate_temp = 0;
 
   always @ (posedge clk) begin
 

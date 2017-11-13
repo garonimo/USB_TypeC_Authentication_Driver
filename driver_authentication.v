@@ -10,6 +10,7 @@
 */
 
 
+
 module authentication_driver
   (
     input wire clk,
@@ -32,16 +33,17 @@ module authentication_driver
   //-------------------------------Parámetros-----------------------------------
   //estados
   parameter IDLE = 9'b000000001, GET_DATA_OF_REQUESTER_PD = 9'b000000010;
-  parameter GET_REQUESTER_MSG = 9'b000000100;
+  parameter INITIATOR_RESPONDER = 9'b000000100;
   parameter RESPONDER = 9'b000001000, INITIATOR = 9'b000010000;
   parameter USB_MSG = 9'b000100000, GET_DATA_OF_REQUESTER_DEBUG = 9'b001000000;
   parameter SEND_MSG = 9'b010000000, ACK = 9'b100000000;
 
 //Internal variables
-  reg [`SIZE_OF_STATES_DRIVER-1:0] state, next_state;
-  reg [7:0] current_auth_request;
+  reg [`SIZE_OF_STATES_DRIVER-1:0] state_driver, next_state;
+  reg [7:0] current_auth_request = 0;
   reg counter = 0;
-  reg [1:0] requester,initiator_or_responder,USB_or_not;
+  reg [1:0] requester,initiator_or_responder = 0;
+  reg [1:0] USB_or_not = 0;
   wire Error_Busy_Responder, Error_Busy_Initiator;
 
 //handshakes
@@ -49,36 +51,39 @@ module authentication_driver
   wire Initiator_Enable, Initiator_ready;
   wire pending_init_msg;
   wire [1:0] slot;
-  reg [1:0] slot_temp;
-  reg  Responder_Enable_temp, Initiator_Enable_temp;
-  reg auth_msg_ready_temp;
-  reg PD_out_ready_temp,DEBUG_out_ready_temp;
-  reg [7:0] auth_msg_resp_out_temp;
+  reg [1:0] slot_temp = 0;
+  reg Responder_Enable_temp = 0;
+  reg Initiator_Enable_temp = 0;
+  reg auth_msg_ready_temp = 0;
+  reg PD_out_ready_temp = 0;
+  reg DEBUG_out_ready_temp = 0;
+  reg [7:0] auth_msg_resp_out_temp = 0;
   reg pending_auth_request_PD_erase_temp = 0;
   reg pending_auth_request_DEBUG_erase_temp = 0;
 
 //Auth MSG Variables
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header;
-  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
-  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
+  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp = 0;
+  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp = 0;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_responder;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_responder;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_initiator;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_initiator;
-  reg [`MSG_LEN-1:0] auth_msg_out_temp;
+  reg [`MSG_LEN-1:0] auth_msg_out_temp = 0;
   wire Ack_out_resp, Ack_out_init;
-  reg Ack_out_resp_temp, Ack_out_init_temp;
+  reg Ack_out_resp_temp = 0;
+  reg Ack_out_init_temp = 0;
   wire [7:0] bmRequestType, bmRequestType_Responder, bmRequestType_Initiator;
   wire [7:0] bRequest, bRequest_Responder, bRequest_Initiator;
   wire [15:0] wLength, wLength_Responder, wLength_Initiator;
-  reg [7:0] bmRequestType_temp;
-  reg [7:0] bRequest_temp;
-  reg [15:0] wLength_temp;
+  reg [7:0] bmRequestType_temp = 0;
+  reg [7:0] bRequest_temp = 0;
+  reg [15:0] wLength_temp = 0;
   wire [31:0] current_timeout_responder;
   wire [31:0] current_timeout_initiator;
   wire [1:0] type_of_request;
-  reg [1:0] type_of_request_temp;
+  reg [1:0] type_of_request_temp = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 //-------------------------Inicio del código------------------------------------
@@ -97,6 +102,7 @@ module authentication_driver
       .wLength(wLength_Responder),
       .current_timeout(current_timeout_responder),
       .header(header_responder),
+      .Error_Busy(Error_Busy_Responder),
       .payload(payload_responder)
     );
 
@@ -150,9 +156,10 @@ module authentication_driver
 //----------------------Lógica combinacional------------------------------------
   always @ (*) begin : FSM_COMB
     next_state = 0;
-    case (state)
+    case (state_driver)
 
-        IDLE: begin
+        IDLE:
+        begin
             case (counter)
 
               0:
@@ -188,7 +195,7 @@ module authentication_driver
               initiator_or_responder = current_auth_request[5:4];
               USB_or_not = current_auth_request[3:2];
               type_of_request_temp = current_auth_request[1:0];
-              next_state = GET_REQUESTER_MSG;
+              next_state = INITIATOR_RESPONDER;
         end //GET_DATA_OF_REQUESTER_PD
 
 
@@ -199,11 +206,11 @@ module authentication_driver
               initiator_or_responder = current_auth_request[5:4];
               USB_or_not = current_auth_request[3:2];
               type_of_request_temp = current_auth_request[1:0];
-              next_state = GET_REQUESTER_MSG;
+              next_state = INITIATOR_RESPONDER;
         end //GET_DATA_OF_REQUESTER_DEBUG
 
 
-        GET_REQUESTER_MSG:
+        INITIATOR_RESPONDER:
         begin
             if (initiator_or_responder == 2'b01) begin
               next_state = RESPONDER;
@@ -214,7 +221,7 @@ module authentication_driver
             else begin
               next_state = IDLE;
             end
-        end //GET_REQUESTER_MSG
+        end //INITIATOR_RESPONDER
 
 
         RESPONDER:
@@ -264,10 +271,10 @@ module authentication_driver
 //-------------------------sequential logic-------------------------------------
   always @ (posedge clk) begin : FSM_SEQ
     if (reset == 1'b1) begin
-      state <= IDLE;
+      state_driver <= IDLE;
     end
     else begin
-      state <= next_state;
+      state_driver <= next_state;
     end
   end // Always
 
@@ -277,11 +284,11 @@ module authentication_driver
       auth_msg_out_temp <= 1'b0;
     end
     else begin
-      case (state)
+      case (state_driver)
 
         IDLE:
         begin
-          counter += 1;
+          counter = counter + 1;
           Ack_out_resp_temp <= 1'b0;
           auth_msg_out_temp <= 1'b0;
           PD_out_ready_temp <= 1'b0;
@@ -299,7 +306,7 @@ module authentication_driver
           DEBUG_out_ready_temp <= 1'b1;
         end
 
-        GET_REQUESTER_MSG:
+        INITIATOR_RESPONDER:
         begin
           if (!counter) begin
             pending_auth_request_DEBUG_erase_temp <= 1'b1;

@@ -26,17 +26,22 @@ module get_certificate_answer
   parameter SLOT0 = 2'b00, SLOT1 = 2'b01, SLOT2 = 2'b10;
 
   reg Ack_out_temp = 0;
-  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
-  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
-  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] Payload_in;
-  reg [15:0] offset,length;
+  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp = 0;
+  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp = 0;
+  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] Payload_in = 0;
+  reg [15:0] offset,length = 0;
   reg Error_Invalid_Request_temp = 0;
-  reg [15:0] wLength_temp;
+  reg [15:0] wLength_temp = 0;
 
 
   always @ (posedge clk) begin
     if (Enable) begin
       Payload_in = auth_msg_resp_in[2047:0];
+      header_temp = 0;
+      payload_temp = 0;
+      Ack_out_temp = 0;
+      Error_Invalid_Request_temp = 0;
+      wLength_temp = 0;
       offset = auth_msg_resp_in[`MSG_LEN-1-(4*`SIZE_OF_HEADER_VARS):`MSG_LEN-(6*`SIZE_OF_HEADER_VARS)];
       length = auth_msg_resp_in[`MSG_LEN-1-(6*`SIZE_OF_HEADER_VARS):`MSG_LEN-(8*`SIZE_OF_HEADER_VARS)];
 
@@ -219,10 +224,14 @@ module get_certificate_answer
 
     end //(Enable)
     else begin
-      Error_Invalid_Request_temp = 1'b0;
+      Payload_in = 0;
       header_temp = 0;
       payload_temp = 0;
-      Ack_out_temp = 1'b0;
+      Ack_out_temp = 0;
+      Error_Invalid_Request_temp = 0;
+      wLength_temp = 0;
+      offset = 0;
+      length = 0;
     end
   end //Always
 

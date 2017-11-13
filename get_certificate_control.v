@@ -41,23 +41,25 @@ module certificate_control
   wire Error_Invalid_Certificate;
   wire Valid_Certificate;
   wire [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] Payload_Compare;
-  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] Payload_Compare_temp;
+  reg [`MSG_LEN-1-(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES):0] Payload_Compare_temp = 0;
   //Handshakes
-  reg Ack_out_temp;
+  reg Ack_out_temp = 0;
   wire certificate_compare_enable;
-  reg certificate_compare_enable_temp;
+  reg certificate_compare_enable_temp = 0;
   wire Cert_Generator_enable;
   wire Ack_in_Cert_Generator;
   wire Ack_out_GetCert;
-  reg Ack_out_GetCert_temp;
-  reg Cert_Generator_enable_temp;
-  reg pending_authentication_temp;
-  reg Certification_done_temp, Certification_failed_temp;
-  reg Valid_header;
+  reg Ack_out_GetCert_temp = 0;
+  reg Cert_Generator_enable_temp = 0;
+  reg pending_authentication_temp = 0;
+  reg Certification_done_temp = 0;
+  reg Certification_failed_temp = 0;
+  reg Valid_header = 0;
   //Variables internas
-  reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in;
+  reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in = 0;
+  reg [`SIZE_OF_HEADER_VARS-1:0] MessageType_in = 0;
   //Variables de estado
-  reg [`SIZE_OF_STATES_INIT-1:0] state, next_state;
+  reg [`SIZE_OF_STATES_INIT-1:0] state_cert_control, next_state;
 
   //////////////////////////////////////////////////////////////////////////////
   //-------------------------Inicio del código----------------------------------
@@ -97,8 +99,8 @@ module certificate_control
   //----------------------Lógica combinacional------------------------------------
 
   always @ (*) begin : CERT_CTRL_COMB
-    next_state = 0;
-    case (state)
+    next_state = 9'b0;
+    case (state_cert_control)
 
       IDLE:
       begin
@@ -164,7 +166,7 @@ module certificate_control
       begin
         if (Certification_failed) begin
           next_state <= IDLE;
-        end 
+        end
         else if (pending_authentication == 1'b0) begin
           next_state <= IDLE;
         end else begin
@@ -180,13 +182,13 @@ module certificate_control
   //---------------------------Lógica secuencial---------------------------------
   always @ (posedge clk) begin : GET_CERT_SEQ
     if (reset == 1'b1) begin
-        state <= IDLE;
+        state_cert_control <= IDLE;
     end
     else if (Error_authentication_failed) begin
-        state <= END;
+        state_cert_control <= END;
     end
     else begin
-        state <= next_state;
+        state_cert_control <= next_state;
       end
   end // Always
 
@@ -197,7 +199,7 @@ module certificate_control
       Certification_done_temp <=  1'b0;
     end//If-reset
     else begin
-      case (state)
+      case (state_cert_control)
 
         IDLE:
         begin
@@ -209,6 +211,7 @@ module certificate_control
 
         CREATE_CERTIFICATE_MSG:
         begin
+          Valid_header = 1'b0;
           certificate_compare_enable_temp <= 1'b0;
           pending_authentication_temp <= 1'b1;
           Ack_out_temp <= 1'b0;
@@ -234,7 +237,7 @@ module certificate_control
         WAIT_CERTIFICATE_RESPONSE:
         begin
           Ack_out_temp <= 1'b0;
-          if ((ProtocolVersion_in == 8'h01) && (MessageType_in == 8'h82)) begin
+          if ((ProtocolVersion_in == 8'h01) && (MessageType_in == 8'h02)) begin
             Valid_header = 1'b1;
           end else begin
             Valid_header = 1'b0;
@@ -255,6 +258,7 @@ module certificate_control
 
         END:
         begin
+          Valid_header = 1'b0;
           Ack_out_GetCert_temp <= 1'b0;
           if ((!Error_authentication_failed) && (!Error_Invalid_Certificate)) begin
             Certification_done_temp <=  1'b1;

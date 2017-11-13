@@ -1,0 +1,11 @@
+read_verilog Responder.v
+hierarchy -check
+proc; opt; techmap; opt
+#proc; opt; fsm; opt; memory; opt
+#techmap; opt
+#dfflibmap -liberty cmos_cells.lib
+abc -liberty cmos_cells.lib
+#splitnets -ports; opt
+#extract -map coarse_cells.v
+write_verilog sintetizado.v
+#show

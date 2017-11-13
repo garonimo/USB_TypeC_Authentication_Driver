@@ -49,28 +49,31 @@ module initiator
 
   reg [31:0] current_timeout_temp = `CHALLENGE_TIMEOUT_AUTH;
   //Variables del mensaje de autenticacion
-  reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
+  reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in = 0;
+  reg [`SIZE_OF_HEADER_VARS-1:0] MessageType_in = 0;
+  reg [`SIZE_OF_HEADER_VARS-1:0] Param1_in = 0;
+  reg [`SIZE_OF_HEADER_VARS-1:0] Param2_in = 0;
   wire [`SIZE_OF_HEADER_VARS-1:0] Param1;
-  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
+  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp = 0;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_challenge,header_digests,header_error;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_Certificate;
-  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
+  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp = 0;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_challenge,payload_digests;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_Certificate;
   wire payload_error;
   //Variables para mensajes sobre USB
-  reg [7:0] bmRequestType_temp;
-  reg [7:0] bRequest_temp;
-  reg [15:0] wLength_temp;
+  reg [7:0] bmRequestType_temp = 0;
+  reg [7:0] bRequest_temp = 0;
+  reg [15:0] wLength_temp = 0;
   wire [15:0] wLength_GetCertificate;
   //Variables para "handshakes"
-  reg Ack_out_temp;
-  reg pending_auth_msg_to_send_temp;
+  reg Ack_out_temp = 0;
   wire GetCert_enable;
   wire Ack_in_GetCert, Ack_out_GetCert;
-  reg GetCert_enable_temp, Ack_out_GetCert_temp;
+  reg GetCert_enable_temp = 0;
+  reg Ack_out_GetCert_temp = 0;
   //Variables de estado
-  reg [`SIZE_OF_STATES_INIT-1:0] state, next_state;
+  reg [`SIZE_OF_STATES_INIT-1:0] state_initiator, next_state;
 
   ////////////////////////////////////////////////////////////////////////////////
   //-------------------------Inicio del código------------------------------------
@@ -101,7 +104,7 @@ module initiator
   always @ (*)
    begin : INITIATOR_COMB
     next_state = 9'b0;
-    case (state)
+    case (state_initiator)
 
       IDLE:
       begin
@@ -191,11 +194,11 @@ module initiator
 
   //---------------------------Lógica secuencial---------------------------------
   always @ (posedge clk) begin : INITIATOR_SEQ
-    if ((reset == 1'b1) || (Error_authentication_failed == 1'b1) || (Error_Busy)) begin
-        state <= IDLE;
+    if ((reset == 1'b1) || (Error_authentication_failed == 1'b1) || (Error_Busy == 1'b1) || (init_req_in == 1'b0)) begin
+        state_initiator <= IDLE;
       end
     else begin
-        state <= next_state;
+        state_initiator <= next_state;
       end
   end // Always
 
@@ -208,7 +211,7 @@ module initiator
       GetCert_enable_temp <= 1'b0;
     end
     else begin
-      case (state)
+      case (state_initiator)
 
         IDLE:
         begin
@@ -217,29 +220,50 @@ module initiator
           header_temp <= 0;
           payload_temp <= 0;
           GetCert_enable_temp <= 1'b0;
-        end
+        end //IDLE
+
 
         CHALLENGE:
         begin
+          bmRequestType_temp <= 128;
+          bRequest_temp <= 24;
+          wLength_temp <= 168;
           current_timeout_temp <= `CHALLENGE_TIMEOUT;
-          header_temp <= `HEADER_CHALLENGE_SLOT1;
+          case(slot)
+
+            2'b00: header_temp <= `HEADER_CHALLENGE_SLOT0;
+            2'b01: header_temp <= `HEADER_CHALLENGE_SLOT1;
+            2'b10: header_temp <= `HEADER_CHALLENGE_SLOT2;
+
+            default: header_temp <= 0;
+
+          endcase
           payload_temp <= 0;
-        end
+        end //CHALLENGE
+
 
         DIGESTS:
         begin
+          bmRequestType_temp <= 128;
+          bRequest_temp <= 24;
+          wLength_temp <= 260;
           current_timeout_temp <= `DIGEST_REQ_TIMEOUT;
-          header_temp <= `HEADER_DIGESTS;
+          header_temp <= `HEADER_DIGESTS_REQ;
           payload_temp <= 0;
-        end
+        end//DIGESTS
+
 
         CERTIFICATE:
         begin
+          bmRequestType_temp <= 0;
+          bRequest_temp <= 25;
+          wLength_temp <= 2052;
           header_temp <= header_Certificate;
           payload_temp <= payload_Certificate;
           current_timeout_temp <= `GET_CERTIFICATE_TIMEOUT;
           GetCert_enable_temp <= 1'b1;
-        end
+        end//CERTIFICATE
+
 
         SEND_MSG:
         begin
@@ -247,7 +271,8 @@ module initiator
           Ack_out_GetCert_temp <= 1'b1;
           GetCert_enable_temp <= 1'b0;
           Ack_out_temp <= 1'b1;
-        end
+        end //SEND_MSG
+
 
         ACK:
         begin
@@ -272,7 +297,9 @@ module initiator
   assign Ack_out = Ack_out_temp;
   assign header = header_temp;
   assign payload = payload_temp;
-  assign pending_auth_msg_to_send = pending_auth_msg_to_send_temp;
+  assign bmRequestType = bmRequestType_temp;
+  assign bRequest = bRequest_temp;
+  assign wLength = wLength_temp;
   assign GetCert_enable = GetCert_enable_temp;
   assign Ack_out_GetCert = Ack_out_GetCert_temp;
 

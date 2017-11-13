@@ -9,6 +9,12 @@
 * mensajes de autenticación en base a lo que se tiene en la entrada
 */
 
+`include "../Parameters.v"
+`include "../get_certificate.v"
+`include "../get_digests.v"
+`include "../challenge.v"
+`include "../Error_response.v"
+
 
 module responder
   (
@@ -17,7 +23,6 @@ module responder
     input wire resp_req_in,
     input wire [`MSG_LEN-1:0] auth_msg_resp_in,
     input wire Ack_in,
-    input wire [1:0] slot,
     input wire Error_Busy,
     output wire resp_req_out,
     output wire [7:0] bmRequestType,
@@ -30,10 +35,10 @@ module responder
 
   //-------------------------------Parámetros-----------------------------------
   //estados
-  parameter IDLE = 9'b000000001, GET_HEADER_DATA = 9'b000000010, GEN_ERROR = 9'b000000100;
-  parameter WHICH_REQ = 9'b000001000, GET_CERTIFICATE = 9'b000010000;
-  parameter CHALLENGE = 9'b000100000, GET_DIGESTS = 9'b001000000;
-  parameter SEND_MSG = 9'b010000000, ACK = 9'b100000000;
+  parameter IDLE = 8'b000000001, GET_HEADER_DATA = 8'b000000010, GEN_ERROR = 8'b000000100;
+  parameter WHICH_REQ = 8'b000001000, GET_CERTIFICATE = 8'b000010000;
+  parameter CHALLENGE = 8'b000100000, GET_DIGESTS = 8'b001000000;
+  parameter SEND_MSG = 8'b010000000, ACK = 8'b100000000;
 
   //--------------------------------Variables-----------------------------------
   //Variables inicializadas
@@ -46,36 +51,30 @@ module responder
   wire Error_Invalid_Request_challenge,Error_Invalid_Request_GetCertificate;
   reg [31:0] current_timeout_temp = `CHALLENGE_TIMEOUT_AUTH;
   //Variables del mensaje de autenticacion
-  reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in = 0;
-  reg [`SIZE_OF_HEADER_VARS-1:0] MessageType_in = 0;
-  reg [`SIZE_OF_HEADER_VARS-1:0] Param1_in = 0;
-  reg [`SIZE_OF_HEADER_VARS-1:0] Param2_in = 0;
+  reg [`SIZE_OF_HEADER_VARS-1:0] ProtocolVersion_in,MessageType_in,Param1_in,Param2_in;
   wire [`SIZE_OF_HEADER_VARS-1:0] Param1;
-  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp = 0;
+  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_challenge,header_digests,header_error;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_GetCertificate;
-  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp = 0;
+  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_challenge,payload_digests;
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_GetCertificate;
   wire payload_error; //must be erased
   //Variables para mensajes sobre USB
-  reg [7:0] bmRequestType_temp = 0;
-  reg [7:0] bRequest_temp = 0;
-  reg [15:0] wLength_temp = 0;
+  reg [7:0] bmRequestType_temp;
+  reg [7:0] bRequest_temp;
+  reg [15:0] wLength_temp;
   wire [15:0] wLength_GetCertificate;
   //Variables para "handshakes"
   wire Error_MSG_ready,error_response_enable,get_certificate_enable;
-  reg error_response_enable_temp = 0;
-  reg get_certificate_enable_temp = 0;
-  reg [`MSG_LEN-1:0] auth_msg_resp_out_temp = 0;
-  reg resp_req_out_temp = 0;
-  reg Ack_in_get_digests = 0;
+  reg error_response_enable_temp,get_certificate_enable_temp;
+  reg [`MSG_LEN-1:0] auth_msg_resp_out_temp;
+  reg resp_req_out_temp, Ack_in_get_digests;
   wire GetCertificate_answer_Ack_in;
   wire Ack_out_get_digests,challenge_enable,challenge_answer_Ack_in;
-  reg challenge_enable_temp = 0;
-  reg flag = 0;
+  reg challenge_enable_temp;
   //Variables de estado
-  reg [`SIZE_OF_STATES_RESP-1:0] state_responder, next_state;
+  reg [`SIZE_OF_STATES_RESP-1:0] state, next_state;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -142,29 +141,16 @@ module responder
 
  always @ (*)
   begin : RESPONDER_COMB
-    next_state = 9'b000000000;
-    Error_Invalid_Request_temp = Error_Invalid_Request_temp;
-    Error_Unsupported_Protocol_temp = Error_Unsupported_Protocol_temp;
-    ProtocolVersion_in = ProtocolVersion_in;
-    MessageType_in = MessageType_in;
-    Param1_in = Param1_in;
-    Param2_in = Param2_in;
-    header_temp = header_temp;
-    payload_temp = payload_temp;
-    bmRequestType_temp = bmRequestType_temp;
-    bRequest_temp = bRequest_temp;
-    wLength_temp = wLength_temp;
-    error_response_enable_temp = error_response_enable_temp;
-    get_certificate_enable_temp = get_certificate_enable_temp;
-    auth_msg_resp_out_temp = auth_msg_resp_out_temp;
-    resp_req_out_temp = resp_req_out_temp;
-    Ack_in_get_digests = Ack_in_get_digests;
-    challenge_enable_temp = challenge_enable_temp;
-
-   case (state_responder)
+   next_state = 9'b0;
+   case (state)
 
      IDLE:
      begin
+           resp_timeout_counter = 0;
+           resp_req_out_temp = 1'b0;
+           header_temp = 0;
+           payload_temp = 0;
+
            if (resp_req_in == 1'b1) begin
              next_state = GET_HEADER_DATA;
            end
@@ -203,6 +189,14 @@ module responder
 
      GET_DIGESTS:
      begin
+        bmRequestType_temp = 128;
+        bRequest_temp = 24;
+        wLength_temp = 260;
+        current_timeout_temp = `DIGEST_ANW_TIMEOUT;
+        payload_temp = payload_digests;
+        header_temp = header_digests;
+        Ack_in_get_digests = 1'b1;
+
         if (Ack_out_get_digests == 1'b1) begin
           next_state = SEND_MSG;
         end else begin
@@ -213,6 +207,14 @@ module responder
 
      GET_CERTIFICATE:
      begin
+         bmRequestType_temp = 0;
+         bRequest_temp = 25;
+         wLength_temp = wLength_GetCertificate;
+         current_timeout_temp = `CERTIFICATE_ANW_TIMEOUT;
+         header_temp = header_GetCertificate;
+         payload_temp = payload_GetCertificate;
+         get_certificate_enable_temp = 1'b1;
+
          if (GetCertificate_answer_Ack_in == 1'b1) begin
            next_state = SEND_MSG;
          end else begin
@@ -223,13 +225,17 @@ module responder
 
      CHALLENGE:
      begin
+        bmRequestType_temp = 0;
+        bRequest_temp = 25;
+        wLength_temp = 32;
+        current_timeout_temp = `CHALLENGE_TIMEOUT_AUTH;
+        header_temp = header_challenge;
+        payload_temp = payload_challenge;
+        challenge_enable_temp = 1'b1;
+
         if (challenge_answer_Ack_in == 1'b1) begin
           next_state = SEND_MSG;
-        end
-        else if (Error_Invalid_Request_GetCertificate == 1'b1) begin
-          next_state = GEN_ERROR;
-        end
-        else begin
+        end else begin
           next_state = CHALLENGE;
         end
      end //CHALLENGE
@@ -237,6 +243,10 @@ module responder
 
      GEN_ERROR:
      begin
+      header_temp = header_error;
+      payload_temp = payload_error;
+      error_response_enable_temp = 1'b1;
+
       if (Error_MSG_ready) begin
         next_state = SEND_MSG;
       end else begin
@@ -247,10 +257,14 @@ module responder
 
      SEND_MSG:
      begin
-       if ((Error_Invalid_Request_GetCertificate == 1'b1) && (Error_MSG_ready == 1'b0)) begin
-         next_state = GEN_ERROR;
-       end
-       else if (header) begin
+       error_response_enable_temp = 1'b0;
+       Error_Unsupported_Protocol_temp = 1'b0;
+       Error_Invalid_Request_temp = 1'b0;
+       challenge_enable_temp = 1'b0;
+       get_certificate_enable_temp = 1'b0;
+       Ack_in_get_digests = 1'b0;
+
+       if (header) begin
           next_state = ACK;
        end
        else begin
@@ -261,6 +275,8 @@ module responder
 
      ACK:
      begin
+       resp_req_out_temp = 1'b1;
+
        if (Ack_in) begin
           next_state = IDLE;
        end
@@ -270,7 +286,13 @@ module responder
      end //ACK
 
 
-     default: next_state = IDLE;
+     default:
+     begin
+      resp_req_out_temp = 1'b0;
+      auth_msg_resp_out_temp = 0;
+      next_state = IDLE;
+     end
+
     endcase
 
   end //Always-RESPONDER_COMB
@@ -278,28 +300,27 @@ module responder
 //-------------------------Lógica secuencial------------------------------------
 
  always @ (posedge clk) begin : Resp_SEQ
-   if ((reset == 1'b1) || (resp_req_in == 1'b0)) begin
-     state_responder <= IDLE;
+   if (reset == 1'b1) begin
+     state <= IDLE;
    end
-   else if ((Error_Busy || Error_Unsupported_Protocol || Error_Invalid_Request || Error_Unspecified || Error_Invalid_Request_challenge) && (state_responder != GEN_ERROR) && (state_responder != SEND_MSG) && (state_responder != ACK)) begin
-     state_responder <= GEN_ERROR;
-     flag <= 1;
+   else if ((Error_Busy | Error_Unsupported_Protocol_temp | Error_Invalid_Request | Error_Unspecified) && (state != GEN_ERROR)) begin
+     state <= GEN_ERROR;
    end
    else begin
-     state_responder <= next_state;
+     state <= next_state;
    end
  end // Always-Resp_SEQ
 
  //---------------------------Lógica de salida----------------------------------
 
-   always @ (negedge clk) begin : Resp_OUTPUT
+   /*always @ (negedge clk) begin : Resp_OUTPUT
      if (reset == 1'b1) begin
        resp_req_out_temp <= 1'b0;
        header_temp <= 0;
        payload_temp <= 0;
      end
      else begin
-       case (state_responder)
+       case (state)
 
          IDLE:
          begin
@@ -354,14 +375,14 @@ module responder
            error_response_enable_temp <= 1'b0;
            Error_Unsupported_Protocol_temp <= 1'b0;
            Error_Invalid_Request_temp <= 1'b0;
+           challenge_enable_temp <= 1'b0;
+           get_certificate_enable_temp = 1'b0;
            Ack_in_get_digests <= 1'b0;
          end
 
          ACK:
          begin
            resp_req_out_temp <= 1'b1;
-           get_certificate_enable_temp = 1'b0;
-           challenge_enable_temp <= 1'b0;
          end
 
          default: begin
@@ -371,7 +392,7 @@ module responder
 
        endcase
      end
-   end //Always-Resp_OUTPUT
+   end //Always-Resp_OUTPUT*/
 
 //-------------------------------Fin de la FSM----------------------------------
 

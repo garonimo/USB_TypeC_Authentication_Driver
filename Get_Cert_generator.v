@@ -26,12 +26,12 @@ module Get_Cert_generator
 
   parameter SLOT0 = 2'b00, SLOT1 = 2'b01, SLOT2 = 2'b10;
 
-  reg [7:0] expected_certificates_temp;
-  reg [15:0] offset_counter;
+  reg [7:0] expected_certificates_temp = 0;
+  reg [15:0] offset_counter = 0;
   reg offset_counter_enable = 1;
-  reg Ack_out_temp;
-  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
-  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp;
+  reg Ack_out_temp = 0;
+  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp = 0;
+  reg [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_temp = 0;
 
 //------------------------------------------------------------------------------
 
@@ -59,7 +59,7 @@ module Get_Cert_generator
             2:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT0_CERT1_LENGTH;
+                offset_counter = offset_counter + `SLOT0_CERT1_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -70,7 +70,7 @@ module Get_Cert_generator
             3:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT0_CERT2_LENGTH;
+                offset_counter = offset_counter + `SLOT0_CERT2_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -81,7 +81,7 @@ module Get_Cert_generator
             4:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT0_CERT3_LENGTH;
+                offset_counter = offset_counter + `SLOT0_CERT3_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -92,7 +92,7 @@ module Get_Cert_generator
             5:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT0_CERT4_LENGTH;
+                offset_counter = offset_counter + `SLOT0_CERT4_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -103,7 +103,7 @@ module Get_Cert_generator
             6:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT0_CERT5_LENGTH;
+                offset_counter = offset_counter + `SLOT0_CERT5_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -132,7 +132,7 @@ module Get_Cert_generator
             2:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT1_CERT1_LENGTH;
+                offset_counter = offset_counter + `SLOT1_CERT1_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -143,7 +143,7 @@ module Get_Cert_generator
             3:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT1_CERT2_LENGTH;
+                offset_counter = offset_counter + `SLOT1_CERT2_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -154,7 +154,7 @@ module Get_Cert_generator
             4:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT1_CERT3_LENGTH;
+                offset_counter = offset_counter + `SLOT1_CERT3_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -183,7 +183,7 @@ module Get_Cert_generator
             2:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT2_CERT1_LENGTH;
+                offset_counter = offset_counter + `SLOT2_CERT1_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -194,7 +194,7 @@ module Get_Cert_generator
             3:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT2_CERT2_LENGTH;
+                offset_counter = offset_counter + `SLOT2_CERT2_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -205,7 +205,7 @@ module Get_Cert_generator
             4:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT2_CERT3_LENGTH;
+                offset_counter = offset_counter + `SLOT2_CERT3_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -216,7 +216,7 @@ module Get_Cert_generator
             5:
             begin
               if (offset_counter_enable) begin
-                offset_counter += `SLOT2_CERT4_LENGTH;
+                offset_counter = offset_counter + `SLOT2_CERT4_LENGTH;
                 offset_counter_enable = 0;
               end else begin
                 offset_counter = offset_counter;
@@ -236,6 +236,7 @@ module Get_Cert_generator
       Ack_out_temp <= 1'b1;
     end  // if (Enable == 1'b1)
     else begin
+      offset_counter_enable <= offset_counter_enable;
       Ack_out_temp <= 0;
       header_temp <= 0;
       payload_temp <= 0;

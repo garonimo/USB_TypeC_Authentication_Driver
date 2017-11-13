@@ -20,15 +20,15 @@ module timeout
     output wire Error_Busy
   );
 
-  reg [31:0] Timeout_counter;
-  reg Error_Busy_temp;
+  reg [31:0] Timeout_counter = 0;
+  reg Error_Busy_temp = 0;
 
   always @(posedge clk) begin
     if (auth_msg_ready | reset) begin
       Timeout_counter = 0;
     end
     else if (Enable | Enable_Init_or_Resp) begin
-      Timeout_counter += 1;
+      Timeout_counter = Timeout_counter + 1;
     end else begin
       Timeout_counter = 0;
     end
@@ -38,6 +38,7 @@ module timeout
     end else begin
       Error_Busy_temp <= 1'b0;
     end
+
   end
 
   assign Error_Busy = Error_Busy_temp;

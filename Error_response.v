@@ -24,11 +24,12 @@ module error_response
     output wire MSG_ready
   );
 
-  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp;
+  reg [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_temp = 0;
   reg payload_temp = 0;
-  reg MSG_ready_temp;
-  reg [`SIZE_OF_HEADER_VARS-1:0] Param1,Param2;
-  reg [4:0] Error;
+  reg MSG_ready_temp = 0;
+  reg [`SIZE_OF_HEADER_VARS-1:0] Param1 = 0;
+  reg [`SIZE_OF_HEADER_VARS-1:0] Param2 = 0;
+  reg [4:0] Error = 0;
 
   always @ (posedge clk) begin
     if (Enable) begin
@@ -75,8 +76,13 @@ module error_response
       MSG_ready_temp = 1'b1;
     end //If Enable
     else begin
-      header_temp <= 0;
-      MSG_ready_temp <= 1'b0;
+      header_temp = 0;
+      payload_temp = 0;
+      MSG_ready_temp = 0;
+      Param1 = 0;
+      Param2 = 0;
+      Error = 0;
+
     end
   end //Always
 

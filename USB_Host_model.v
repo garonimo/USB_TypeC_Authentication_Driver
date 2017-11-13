@@ -55,18 +55,20 @@ module PD_DEBUG_Driver_model
 
   assign Ack_in_driver = Ack_in_driver_temp;
 
-  reg [`MSG_LEN-1:0] auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT0,`SLOT0_CERT1};
+  //reg [`MSG_LEN-1:0] auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT1,`SLOT1_CERT1_LENGTH,`SLOT1_CERT3_LENGTH,2016'h0};
+  //reg [`MSG_LEN-1:0] auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT2_ANW,`SLOT2_CERT1};
+  reg [`MSG_LEN-1:0] auth_msg_in_temp = {`HEADER_DIGESTS_REQ,`SLOT2_CERT1};
   initial begin
-    # 600 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT0,`SLOT0_CERT2};
-    # 600 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT0,`SLOT0_CERT3};
-    # 600 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT0,`SLOT0_CERT4};
-    # 600 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT0,`SLOT0_CERT5};
-    # 600 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT0,`SLOT0_CERT6};
-    # 100 $finish;
+    # 500 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT2_ANW,`SLOT2_CERT2};
+    # 400 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT2_ANW,`SLOT2_CERT3};
+    # 400 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT2_ANW,`SLOT2_CERT4};
+    # 400 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT2_ANW,`SLOT2_CERT5};
+    //# 400 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT0_ANW,`SLOT0_CERT6};
+    # 300 $finish;
   end
   assign auth_msg_in = auth_msg_in_temp;
 
-  reg [7:0] pending_auth_request_PD_temp = {2'b00,2'b10,2'b00,2'b11};
+  reg [7:0] pending_auth_request_PD_temp = {2'b10,2'b01,2'b00,2'b11};
   assign pending_auth_request_PD = pending_auth_request_PD_temp;
 
   reg reset = 1;
