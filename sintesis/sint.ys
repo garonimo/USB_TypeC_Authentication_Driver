@@ -1,4 +1,4 @@
-read_verilog Responder.v
+read_verilog driver_authentication.v
 hierarchy -check
 proc; opt; techmap; opt
 #proc; opt; fsm; opt; memory; opt
