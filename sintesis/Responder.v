@@ -9,6 +9,11 @@
 * mensajes de autenticación en base a lo que se tiene en la entrada
 */
 
+`include "../Parameters.v"
+`include "../get_digests.v"
+`include "../challenge.v"
+`include "../get_certificate.v"
+`include "../Error_response.v"
 
 module responder
   (
@@ -143,12 +148,12 @@ module responder
  always @ (*)
   begin : RESPONDER_COMB
     next_state = 9'b000000000;
-    Error_Invalid_Request_temp = Error_Invalid_Request_temp;
-    Error_Unsupported_Protocol_temp = Error_Unsupported_Protocol_temp;
-    ProtocolVersion_in = ProtocolVersion_in;
-    MessageType_in = MessageType_in;
-    Param1_in = Param1_in;
-    Param2_in = Param2_in;
+    Error_Invalid_Request_temp = 0;
+	Error_Unsupported_Protocol_temp = 0;
+	MessageType_in = 0;
+	ProtocolVersion_in = 0;
+	Param1_in = 0;
+	Param2_in = 0;
     header_temp = header_temp;
     payload_temp = payload_temp;
     bmRequestType_temp = bmRequestType_temp;
@@ -191,12 +196,13 @@ module responder
 
      WHICH_REQ:
      begin
+		MessageType_in = auth_msg_resp_in[`MSG_LEN-1-(`SIZE_OF_HEADER_VARS):`MSG_LEN-(2*`SIZE_OF_HEADER_VARS)];
         case(MessageType_in)
           129: next_state = GET_DIGESTS;
           130: next_state = GET_CERTIFICATE;
           131: next_state = CHALLENGE;
 
-          default: Error_Invalid_Request_temp = 1'b1;
+          default: next_state = GET_DIGESTS;
         endcase
      end // WHICH_REQ
 
