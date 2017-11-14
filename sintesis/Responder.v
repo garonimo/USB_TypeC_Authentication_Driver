@@ -202,7 +202,7 @@ module responder
           130: next_state = GET_CERTIFICATE;
           131: next_state = CHALLENGE;
 
-          default: next_state = GET_DIGESTS;
+          default: Error_Invalid_Request_temp = 1'b1;
         endcase
      end // WHICH_REQ
 

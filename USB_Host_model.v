@@ -55,9 +55,9 @@ module PD_DEBUG_Driver_model
 
   assign Ack_in_driver = Ack_in_driver_temp;
 
-  //reg [`MSG_LEN-1:0] auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT1,`SLOT1_CERT1_LENGTH,`SLOT1_CERT3_LENGTH,2016'h0};
+  reg [`MSG_LEN-1:0] auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT1,`SLOT1_CERT1_LENGTH,`SLOT1_CERT2_LENGTH,2016'h0};
   //reg [`MSG_LEN-1:0] auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT2_ANW,`SLOT2_CERT1};
-  reg [`MSG_LEN-1:0] auth_msg_in_temp = {`HEADER_DIGESTS_REQ,`SLOT2_CERT1};
+  //reg [`MSG_LEN-1:0] auth_msg_in_temp = {`HEADER_CHALLENGE_SLOT1,`SLOT2_CERT1};
   initial begin
     # 500 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT2_ANW,`SLOT2_CERT2};
     # 400 auth_msg_in_temp = {`HEADER_CERTIFICATE_SLOT2_ANW,`SLOT2_CERT3};
