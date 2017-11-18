@@ -7,5 +7,5 @@ proc; opt; techmap; opt
 abc -liberty cmos_cells.lib
 #splitnets -ports; opt
 #extract -map coarse_cells.v
-write_verilog sintetizado.v
+write_verilog Todo_sintetizado.v
 #show

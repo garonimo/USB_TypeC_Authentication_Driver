@@ -196,6 +196,7 @@ module responder
 
      WHICH_REQ:
      begin
+		Param1_in = auth_msg_resp_in[`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS):`MSG_LEN-(3*`SIZE_OF_HEADER_VARS)];
 		MessageType_in = auth_msg_resp_in[`MSG_LEN-1-(`SIZE_OF_HEADER_VARS):`MSG_LEN-(2*`SIZE_OF_HEADER_VARS)];
         case(MessageType_in)
           129: next_state = GET_DIGESTS;
@@ -219,6 +220,7 @@ module responder
 
      GET_CERTIFICATE:
      begin
+		 Param1_in = auth_msg_resp_in[`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS):`MSG_LEN-(3*`SIZE_OF_HEADER_VARS)];
          if (GetCertificate_answer_Ack_in == 1'b1) begin
            next_state = SEND_MSG;
          end else begin
@@ -229,6 +231,7 @@ module responder
 
      CHALLENGE:
      begin
+		Param1_in = auth_msg_resp_in[`MSG_LEN-1-(2*`SIZE_OF_HEADER_VARS):`MSG_LEN-(3*`SIZE_OF_HEADER_VARS)];
         if (challenge_answer_Ack_in == 1'b1) begin
           next_state = SEND_MSG;
         end

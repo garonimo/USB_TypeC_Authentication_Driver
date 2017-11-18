@@ -27,6 +27,7 @@ module authentication_driver
     output wire DEBUG_out_ready,
     output wire auth_msg_ready,
     output wire Error_authentication_failed,
+    output wire [2111:0] auth_msg_out_USB,
     output wire [`MSG_LEN-1:0] auth_msg_out
   );
 
@@ -74,6 +75,7 @@ module authentication_driver
   wire Ack_out_resp, Ack_out_init;
   reg Ack_out_resp_temp = 0;
   reg Ack_out_init_temp = 0;
+  reg [2111:0] auth_msg_out_USB_temp = 0;
   wire [7:0] bmRequestType, bmRequestType_Responder, bmRequestType_Initiator;
   wire [7:0] bRequest, bRequest_Responder, bRequest_Initiator;
   wire [15:0] wLength, wLength_Responder, wLength_Initiator;
@@ -246,7 +248,7 @@ module authentication_driver
 
         SEND_MSG:
         begin
-            if (auth_msg_out) begin
+            if ((auth_msg_out) || (auth_msg_out_USB)) begin
               next_state = ACK;
             end else begin
               next_state = SEND_MSG;
@@ -288,6 +290,7 @@ module authentication_driver
 
         IDLE:
         begin
+          auth_msg_out_USB_temp <= 1'b0;
           counter = counter + 1;
           Ack_out_resp_temp <= 1'b0;
           auth_msg_out_temp <= 1'b0;
@@ -344,7 +347,7 @@ module authentication_driver
           Responder_Enable_temp <= 1'b0;
           Initiator_Enable_temp <= 1'b0;
           if (USB_or_not) begin
-            auth_msg_out_temp <= {bmRequestType,bRequest,header,wLength,payload};
+            auth_msg_out_USB_temp <= {bmRequestType,bRequest,header,wLength,payload};
           end else begin
             auth_msg_out_temp <= {header,payload};
           end
@@ -358,6 +361,7 @@ module authentication_driver
         end
 
         default: begin
+          auth_msg_out_USB_temp <= 1'b0;
           auth_msg_out_temp <= 1'b0;
           PD_out_ready_temp <= 1'b0;
           DEBUG_out_ready_temp <= 1'b0;
@@ -368,7 +372,7 @@ module authentication_driver
     end
   end //Always-FSM_OUTPUT
 //---------------------------End of always Code---------------------------------
-
+assign auth_msg_out_USB = auth_msg_out_USB_temp;
 assign Responder_Enable = Responder_Enable_temp;
 assign Initiator_Enable = Initiator_Enable_temp;
 assign auth_msg_ready = auth_msg_ready_temp;

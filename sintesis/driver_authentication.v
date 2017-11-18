@@ -30,6 +30,7 @@ module authentication_driver
     output wire DEBUG_out_ready,
     output wire auth_msg_ready,
     output wire Error_authentication_failed,
+    output wire [2111:0] auth_msg_out_USB,
     output wire [`MSG_LEN-1:0] auth_msg_out
   );
 
@@ -75,6 +76,7 @@ module authentication_driver
   wire [`MSG_LEN-1-((`SIZE_OF_HEADER_VARS)*`SIZE_OF_HEADER_IN_BYTES):0] payload_initiator;
   wire [(`SIZE_OF_HEADER_VARS*`SIZE_OF_HEADER_IN_BYTES)-1:0] header_initiator;
   reg [`MSG_LEN-1:0] auth_msg_out_temp = 0;
+  reg [2111:0] auth_msg_out_USB_temp = 0;
   wire Ack_out_resp, Ack_out_init;
   reg Ack_out_resp_temp = 0;
   reg Ack_out_init_temp = 0;
@@ -275,7 +277,7 @@ module authentication_driver
             initiator_or_responder = current_auth_request[5:4];
             USB_or_not = current_auth_request[3:2];
             type_of_request_temp = current_auth_request[1:0];
-            if (auth_msg_out) begin
+            if ((auth_msg_out) || (auth_msg_out_USB)) begin
               next_state = ACK;
             end else begin
               next_state = SEND_MSG;
@@ -317,6 +319,7 @@ module authentication_driver
 
         IDLE:
         begin
+		  auth_msg_out_USB_temp <= 1'b0;
           counter = counter + 1;
           Ack_out_resp_temp <= 1'b0;
           auth_msg_out_temp <= 1'b0;
@@ -373,7 +376,7 @@ module authentication_driver
           Responder_Enable_temp <= 1'b0;
           Initiator_Enable_temp <= 1'b0;
           if (USB_or_not) begin
-            auth_msg_out_temp <= {bmRequestType,bRequest,header,wLength,payload};
+            auth_msg_out_USB_temp <= {bmRequestType,bRequest,header,wLength,payload};
           end else begin
             auth_msg_out_temp <= {header,payload};
           end
@@ -387,6 +390,7 @@ module authentication_driver
         end
 
         default: begin
+		  auth_msg_out_USB_temp <= 1'b0;
           auth_msg_out_temp <= 1'b0;
           PD_out_ready_temp <= 1'b0;
           DEBUG_out_ready_temp <= 1'b0;
@@ -398,6 +402,7 @@ module authentication_driver
   end //Always-FSM_OUTPUT
 //---------------------------End of always Code---------------------------------
 
+assign auth_msg_out_USB = auth_msg_out_USB_temp;
 assign Responder_Enable = Responder_Enable_temp;
 assign Initiator_Enable = Initiator_Enable_temp;
 assign auth_msg_ready = auth_msg_ready_temp;
